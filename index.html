@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Test Form</title>
+</head>
+
+<body>
+    <h2>Test FastAPI Endpoint</h2>
+    <form action="/api/" method="post" enctype="multipart/form-data">
+        <label for="question">Question:</label>
+        <input type="text" id="question" name="question" required>
+        <br><br>
+        <label for="file">Upload File:</label>
+        <input type="file" id="file" name="file">
+        <br><br>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+
+</html>
