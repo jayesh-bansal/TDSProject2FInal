@@ -29,11 +29,13 @@ async def call_llm(question: str):
         response.raise_for_status()  # Raise error for non-200 responses
         return response.json()["choices"][0]["message"]["content"]
 
-
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
     """Serves the HTML form."""
-    with open("index.html", "r") as file:
+    file_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if not os.path.exists(file_path):
+        return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
+    with open(file_path, "r") as file:
         return HTMLResponse(content=file.read())
 
 
