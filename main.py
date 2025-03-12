@@ -42,15 +42,16 @@ def classify_task(question: str) -> str:
     return "Unknown"  # Default if no match is found
 
 def save_file(file: UploadFile):
+    os.makedirs("uploads", exist_ok=True)
     if not file or not file.filename:
         return "Error: No file provided."
-    file_path = os.path.join(os.getcwd(), file.filename)
+    # Define the file path
+    file_path = os.path.join(os.getcwd(), "uploads", file.filename)
     try:
+        # Write the file content manually
         with open(file_path, "wb") as buffer:
             buffer.write(file.file.read())
-        print(f"File saved successfully: {file_path}")  # Debugging output
     except Exception as e:
-        print(f"Error saving file: {e}")  # Debugging output
         return f"Error saving file: {str(e)}"
     return file_path
 
