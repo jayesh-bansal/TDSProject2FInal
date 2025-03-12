@@ -65,16 +65,19 @@ async def serve_form():
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
 @app.post("/api/")
-async def receive_question(question: str = Form(...),file: UploadFile = File(None)):
+async def receive_question(
+    question: str = Form(...),
+    file: Optional[UploadFile] = File(None)
+):
     task_id = classify_task(question)
+    
+    file_path = None
     if file:
         file_path = save_file(file)
         print(file_path)
-    if task_id in ['GA1.3','GA1.4','GA1.5','GA1.7','GA1.8','GA1.9','GA1.10','GA1.12']:
-        if file:
-            answer = fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        else:
-            answer = fetch_answer(task_id=task_id, question=question, file_path="")
+
+    if task_id in {'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12'}:
+        answer = fetch_answer(task_id=task_id, question=question, file_path=file_path or "")
     else:
         answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
 
@@ -82,4 +85,5 @@ async def receive_question(question: str = Form(...),file: UploadFile = File(Non
         "question": question,
         "task": task_id,
         "answer": answer,
-        "file received": file.filename if file else "No file uploaded",}
+        "file_received": file.filename if file else "No file uploaded",
+    }
