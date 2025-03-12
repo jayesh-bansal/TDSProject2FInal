@@ -1,24 +1,23 @@
-from fastapi import FastAPI, Form, File, UploadFile, HTTPException
+from fastapi import FastAPI, Form, File, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
 import os
 
 app = FastAPI()
 
-# Add CORS middleware
+# CORS Configuration (Vercel allows any origin by default)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
+    file_path = os.path.join(os.path.dirname(__file__), "index.html")
     try:
-        file_path = os.path.join(os.path.dirname(__file__), "index.html")
         with open(file_path, "r") as file:
             return HTMLResponse(content=file.read())
     except FileNotFoundError:
@@ -26,11 +25,15 @@ async def serve_form():
 
 @app.post("/api")
 async def receive_question(
-    question: str = Form(..., min_length=1),
-    file: Optional[UploadFile] = File(None)
+    question: str = Form(...),
+    file: UploadFile = File(None)
 ):
     return {
         "question": question,
-        "answer": "",
+        "answer": "Processing...",
         "file received": file.filename if file else "No file uploaded",
     }
+
+# Import the ASGI app for Vercel
+from mangum import Mangum  
+handler = Mangum(app)
