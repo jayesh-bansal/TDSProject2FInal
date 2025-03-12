@@ -33,7 +33,3 @@ async def receive_question(
         "answer": "Processing...",
         "file received": file.filename if file else "No file uploaded",
     }
-
-# Import the ASGI app for Vercel
-from mangum import Mangum  
-handler = Mangum(app)
