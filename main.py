@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import openpyxl
 from processing import fetch_answer
+from typing import Optional
 
 app = FastAPI()
 
@@ -69,21 +70,30 @@ async def receive_question(
     question: str = Form(...),
     file: Optional[UploadFile] = File(None)
 ):
-    task_id = classify_task(question)
+    try:
+        task_id = classify_task(question)  # Ensure this function is implemented properly
+
+        file_path = None
+        if file:
+            file_path = save_file(file)
+            print(file_path)
+
+        if task_id in {'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12'}:
+            answer = fetch_answer(task_id=task_id, question=question, file_path=file_path or "")
+        else:
+            answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
+
+        return {
+            "question": question,
+            "task": task_id,
+            "answer": answer,
+            "file_received": file.filename if file else "No file uploaded",
+        }
     
-    file_path = None
-    if file:
-        file_path = save_file(file)
-        print(file_path)
-
-    if task_id in {'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12'}:
-        answer = fetch_answer(task_id=task_id, question=question, file_path=file_path or "")
-    else:
-        answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
-
-    return {
-        "question": question,
-        "task": task_id,
-        "answer": answer,
-        "file_received": file.filename if file else "No file uploaded",
-    }
+    except HTTPException as e:
+        # Handles specific HTTP exceptions
+        return JSONResponse(status_code=e.status_code, content={"error": str(e)})
+    
+    except Exception as e:
+        # General error handling for internal server errors (500)
+        return JSONResponse(status_code=500, content={"error": "Internal Server Error", "details": str(e)})
