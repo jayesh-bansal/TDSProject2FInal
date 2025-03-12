@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+
+# Uploads directory
+uploads/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code settings
+.vscode/
+
+# Ignore environment files (optional)
+.env
+*.env
+
+# Ignore logs and temp files (optional)
+*.log
+*.tmp
