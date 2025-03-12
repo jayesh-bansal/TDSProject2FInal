@@ -1,4 +1,5 @@
 fastapi
 uvicorn
+mangum
 httpx
 python-multipart
