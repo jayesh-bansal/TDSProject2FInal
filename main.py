@@ -1,10 +1,8 @@
-from fastapi import FastAPI, Form, File, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
-import httpx
-import json
-import uvicorn
+import os
 
 app = FastAPI()
 
@@ -26,9 +24,7 @@ async def serve_form():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
-
 @app.post("/api")
-@app.post("/api/")
 async def receive_question(
     question: str = Form(..., min_length=1),
     file: Optional[UploadFile] = File(None)
