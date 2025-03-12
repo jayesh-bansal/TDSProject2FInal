@@ -18,6 +18,7 @@ app.add_middleware(
 
 EXCEL_FILE = os.path.join(os.path.dirname(__file__), "tasks.xlsx")
 
+
 def load_tasks_from_excel():
     if not os.path.exists(EXCEL_FILE):
         return {}
@@ -25,13 +26,15 @@ def load_tasks_from_excel():
     sheet = workbook.active
     tasks = {row[0]: row[1] for row in sheet.iter_rows(
         min_row=2, values_only=True) if row[0] and row[1]}
-    
+
     tasks_answers = {row[0]: row[2] for row in sheet.iter_rows(
         min_row=2, values_only=True) if row[0] and row[2]}
     workbook.close()
     return (tasks, tasks_answers)
 
-TASKS,TASKS_ANSWERS = load_tasks_from_excel()
+
+TASKS, TASKS_ANSWERS = load_tasks_from_excel()
+
 
 def classify_task(question: str) -> str:
     """Classify a question based on keyword matching with TASKS."""
@@ -40,6 +43,7 @@ def classify_task(question: str) -> str:
         if any(keyword.lower() in question_lower for keyword in keywords.split(",")):
             return task_id  # Return the first matching task ID
     return "Unknown"  # Default if no match is found
+
 
 def save_file(file: UploadFile):
     os.makedirs("uploads", exist_ok=True)
@@ -55,6 +59,7 @@ def save_file(file: UploadFile):
         return f"Error saving file: {str(e)}"
     return file_path
 
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
     file_path = os.path.join(os.path.dirname(__file__), "index.html")
@@ -64,17 +69,28 @@ async def serve_form():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
+
 @app.post("/api/")
-async def receive_question(question: str = Form(...),file: UploadFile = File(None)):
+async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
     task_id = classify_task(question)
     if file:
         file_path = save_file(file)
         print(file_path)
-    if task_id in ['GA1.3','GA1.4','GA1.5','GA1.7','GA1.8','GA1.9','GA1.10','GA1.12']:
+    if task_id in ['GA1.2', 'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16']:
         if file:
-            answer = fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            answer = fetch_answer(
+                task_id=task_id, question=question, file_path=file_path)
         else:
-            answer = fetch_answer(task_id=task_id, question=question, file_path="")
+            answer = fetch_answer(
+                task_id=task_id, question=question, file_path="")
+    elif task_id in ['GA1.6', 'GA1.11']:
+        func_answer = fetch_answer(
+            task_id=task_id, question=question, file_path="")
+        if func_answer:
+            answer = func_answer
+        else:
+            answer = TASKS_ANSWERS.get(
+                task_id, "No answer found for this task.")
     else:
         answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
 
@@ -82,4 +98,4 @@ async def receive_question(question: str = Form(...),file: UploadFile = File(Non
         "question": question,
         "task": task_id,
         "answer": answer,
-        "file received": file.filename if file else "No file uploaded",}
+        "file received": file.filename if file else "No file uploaded", }

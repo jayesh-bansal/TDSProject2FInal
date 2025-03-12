@@ -1,3 +1,5 @@
+import pytz
+from datetime import datetime
 import requests
 import gspread
 import time
@@ -12,6 +14,8 @@ import os
 import zipfile
 import shutil
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
 
 def extract_zip_file(source: str, extract_folder: str) -> str:
@@ -45,28 +49,57 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 
     return extract_folder
 
+
 def fetch_answer(task_id, question, file_path):
     # if task_id == 'GA1.1': extract from excel
-    # if task_id == 'GA1.2': extract from excel
-    if task_id=='GA1.3':
-        answer=GA1_3(file_path)
-    if task_id=='GA1.4':
+    if task_id == 'GA1.2':
+        answer = GA1_2(question)
+    if task_id == 'GA1.3':
+        answer = GA1_3(file_path)
+    if task_id == 'GA1.4':
         answer = GA1_4(question)
     if task_id == 'GA1.5':
         answer = GA1_5(question)
-    # if task_id == 'GA1.6': extract from excel
+    if task_id == 'GA1.6':
+        answer = GA1_6("https://exam.sanand.workers.dev/tds-2025-01-ga1")
     if task_id == 'GA1.7':
         answer = GA1_7(question)
     if task_id == 'GA1.8':
-        answer = GA1_8(question,file_path)
+        answer = GA1_8(question, file_path)
     if task_id == 'GA1.9':
         answer = GA1_9(question)
     if task_id == 'GA1.10':
         answer = GA1_10(file_path)
-    # if task_id == 'GA1.11': extract from excel
+    if task_id == 'GA1.11':
+        answer = GA1_11("https://exam.sanand.workers.dev/tds-2025-01-ga1")
     if task_id == 'GA1.12':
         answer = GA1_12(question, file_path)
+    if task_id == 'GA1.14':
+        answer = GA1_14(question, file_path)
+    if task_id == 'GA1.15':
+        answer = GA1_15(question, file_path)
+    if task_id == 'GA1.16':
+        answer = GA1_16(file_path)
     return answer
+
+
+def GA1_2(question):
+    email_pattern = r"email set to ([\w.%+-]+@[\w.-]+\.\w+)"
+    match = re.search(email_pattern, question)
+
+    if match:
+        email = match.group(1)
+        url = "https://httpbin.org/get"
+
+        # Construct the HTTPie command
+        command = ["http", "GET", url, f"email=={email}"]
+
+        # Execute the command and capture output
+        result = subprocess.run(command, capture_output=True, text=True)
+        return result.stdout  # Returns the JSON response
+
+    return {"error": "Email not found in the input text"}
+
 
 def GA1_3(file_path):
     try:
@@ -82,21 +115,26 @@ def GA1_3(file_path):
     except subprocess.CalledProcessError as e:
         return f"Error: {e}"
 
+
 def GA1_4(question):
     sum_seq_pattern = r"SUM\(ARRAY_CONSTRAIN\(SEQUENCE\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\),\s*(\d+),\s*(\d+)\)\)"
     if match := re.search(sum_seq_pattern, question):
         rows, cols, start, step, begin, end = map(int, match.groups())
-    if begin > 0:begin=begin-1
-    answer = int(np.sum(np.arange(start, start + cols * step, step)[begin:end]))
+    if begin > 0:
+        begin = begin-1
+    answer = int(
+        np.sum(np.arange(start, start + cols * step, step)[begin:end]))
     return answer
+
 
 def GA1_4_old():
     sheet_url = "https://docs.google.com/spreadsheets/d/1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ/edit"
     sheet_id = "1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ"
-    sheet_name="Sheet1"
+    sheet_name = "Sheet1"
     cell = "A1"
     formula = "=SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))"
     return True
+
 
 def GA1_5(question):
     sum_take_sortby_pattern = r"SUM\(TAKE\(SORTBY\(\{([\d,]+)\},\s*\{([\d,]+)\}\),\s*(\d+),\s*(\d+)\)\)"
@@ -109,7 +147,8 @@ def GA1_5(question):
     sorted_numbers = [x for _, x in sorted(zip(sort_order, numbers))]
     answer = sum(sorted_numbers[begin:end])
     return answer
-    
+
+
 def GA1_7(question):
     weekday_count_pattern = r"How many (\w+)s are there in the date range (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\?"
     if match := re.search(weekday_count_pattern, question):
@@ -117,16 +156,25 @@ def GA1_7(question):
         weekdays = {"Monday": 0, "Tuesday": 1, "Wednesday": 2,
                     "Thursday": 3, "Friday": 4, "Saturday": 5, "Sunday": 6}
         if weekday_str in weekdays:
-            start, end = datetime.strptime(start_date, "%Y-%m-%d"), datetime.strptime(end_date, "%Y-%m-%d")
+            start, end = datetime.strptime(
+                start_date, "%Y-%m-%d"), datetime.strptime(end_date, "%Y-%m-%d")
             answer = sum(1 for i in range((end - start).days + 1) if (start +
                          timedelta(days=i)).weekday() == weekdays[weekday_str])
     return answer
 
-def GA1_8(question,zip_file):
+
+def GA1_6(url):
+    soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    hidden_input = soup.find("input", {"type": "hidden"})
+    return hidden_input.get("value") if hidden_input else ""
+
+
+def GA1_8(question, zip_file):
     file_download_pattern = r"which has a single (.+\.csv) file inside\."
     if match := re.search(file_download_pattern, question):
         csv_filename = match.group(1)
-        extract_folder = extract_zip_file(os.path.join(os.getcwd(), 'uploads', zip_file), zip_file[:-4])
+        extract_folder = extract_zip_file(os.path.join(
+            os.getcwd(), 'uploads', zip_file), zip_file[:-4])
         csv_file_path = os.path.join(extract_folder, csv_filename)
         # Read CSV file
         df = pd.read_csv(csv_file_path)
@@ -134,6 +182,7 @@ def GA1_8(question,zip_file):
         # Cleanup extracted files
         shutil.rmtree(extract_folder, ignore_errors=True)
     return answer
+
 
 def GA1_9(question):
     json_pattern = r"\[.*?\]|\{.*?\}"
@@ -159,6 +208,7 @@ def GA1_9(question):
 
     return None
 
+
 def GA1_10(file_path):
     data = {}
     # Check if file exists
@@ -181,6 +231,15 @@ def GA1_10(file_path):
     # Calculate the hash of the JSON string
     json_hash = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
     return json_hash
+
+
+def GA1_11(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    divs = soup.select('div.foo[data-value]')
+    sum_values = sum(float(div['data-value']) for div in divs)
+    return sum_values
+
 
 def GA1_12(question, zip_path):
     # Regex patterns
@@ -222,3 +281,161 @@ def GA1_12(question, zip_path):
                     if symbol in target_symbols:
                         total_sum += float(value)
     return total_sum
+
+
+def GA1_14(question, zip_path):
+    # Step 1: Extract words to replace and the replacement word from the question
+    pattern = r'replace\s+all\s+"([^"]+)"\s+\(.*\)\s+with\s+"([^"]+)"'
+    match = re.search(pattern, question, re.IGNORECASE)
+    if match:
+        word_to_replace = match.group(1)  # The word to replace
+        replacement_word = match.group(2)  # The replacement word
+    else:
+        raise ValueError("Invalid question format: Unable to extract words.")
+
+    folder_path = zip_path[:-4]
+    # Step 2: Unzip files into the target folder
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(folder_path)
+        print(f"Unzipped files to {folder_path}")
+    # Step 3: Replace words in all files
+    for filename in os.listdir(folder_path):
+        filepath = os.path.join(folder_path, filename)
+
+        if os.path.isfile(filepath):
+            with open(filepath, 'r', encoding='utf-8') as file:
+                content = file.read()
+            # Replace the word (case insensitive)
+            updated_content = re.sub(
+                re.escape(word_to_replace), replacement_word, content, flags=re.IGNORECASE)
+            # Write the modified content back to the file (keeping the original line endings)
+            with open(filepath, 'w', encoding='utf-8') as file:
+                file.write(updated_content)
+    # Step 4: Calculate the SHA-256 hash of the concatenated files
+    sha256_hash = hashlib.sha256()
+    # Sort files to ensure the same order
+    files = sorted(os.listdir(folder_path))
+    for filename in files:
+        filepath = os.path.join(folder_path, filename)
+
+        if os.path.isfile(filepath):
+            with open(filepath, 'rb') as file:
+                while chunk := file.read(4096):
+                    sha256_hash.update(chunk)
+    # Return the final SHA-256 hash value
+    return sha256_hash.hexdigest()
+
+
+def GA1_15(question, zip_path):
+    # Extract file size and modification date from the question
+    size_pattern = r"at least (\d+) bytes"
+    date_pattern = r"modified on or after (.*) IST"
+
+    # Extract file size
+    size_match = re.search(size_pattern, question)
+    if size_match:
+        min_size = int(size_match.group(1))
+    else:
+        raise ValueError("No file size criterion found in the question.")
+
+    # Extract modification date
+    date_match = re.search(date_pattern, question)
+    if date_match:
+        date_str = date_match.group(1).replace(' IST', '').strip()
+        try:
+            target_timestamp = datetime.strptime(
+                date_str, "%a, %d %b, %Y, %I:%M %p")
+            target_timestamp = pytz.timezone(
+                "Asia/Kolkata").localize(target_timestamp)
+        except ValueError as e:
+            raise ValueError(f"Date format error: {e}")
+    else:
+        raise ValueError(
+            "No modification date criterion found in the question.")
+
+    # Determine folder path from the zip file
+    folder_path, _ = os.path.splitext(zip_path)
+
+    # Extract files preserving timestamps
+    if os.name == 'nt':  # Windows
+        try:
+            subprocess.run(
+                ["7z", "x", zip_path, f"-o{folder_path}"], check=True)
+        except FileNotFoundError:
+            raise RuntimeError(
+                "7-Zip not found. Please install or add it to the system PATH.")
+        except subprocess.CalledProcessError:
+            raise RuntimeError("7-Zip extraction failed.")
+    else:  # Linux or macOS
+        try:
+            subprocess.run(
+                ["unzip", "-o", zip_path, "-d", folder_path], check=True)
+        except FileNotFoundError:
+            raise RuntimeError(
+                "unzip not found. Please install unzip utility.")
+        except subprocess.CalledProcessError:
+            raise RuntimeError("unzip extraction failed.")
+
+    # Initialize total size
+    total_size = 0
+
+    # List files and check if they meet the criteria
+    for filename in os.listdir(folder_path):
+        filepath = os.path.join(folder_path, filename)
+
+        if os.path.isfile(filepath):
+            file_size = os.path.getsize(filepath)
+            file_mtime = datetime.fromtimestamp(os.path.getmtime(
+                filepath), tz=pytz.timezone("Asia/Kolkata"))
+
+            if file_size >= min_size and file_mtime >= target_timestamp:
+                total_size += file_size
+
+    return total_size
+
+
+def GA1_16(zip_path):
+    folder_path, _ = os.path.splitext(zip_path)
+    target_folder = os.path.join(folder_path, "renamed_files")
+    os.makedirs(target_folder, exist_ok=True)
+
+    # Extract ZIP
+    if os.name == 'nt':  # Windows
+        subprocess.run(["7z", "x", zip_path, f"-o{folder_path}"], check=True)
+    else:  # Linux/macOS
+        subprocess.run(
+            ["unzip", "-o", zip_path, "-d", folder_path], check=True)
+
+    # Move files to target folder
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            shutil.move(os.path.join(root, file),
+                        os.path.join(target_folder, file))
+
+    # Rename files: replace digits with the next digit
+    def rename_file(file_name):
+        return ''.join([str((int(ch) + 1) % 10) if ch.isdigit() else ch for ch in file_name])
+
+    for filename in os.listdir(target_folder):
+        old_path = os.path.join(target_folder, filename)
+        new_filename = rename_file(filename)
+        new_path = os.path.join(target_folder, new_filename)
+        os.rename(old_path, new_path)
+
+    # Move into the renamed_files folder
+    os.chdir(os.path.join(folder_path, "renamed_files"))
+    # Run the bash command
+    bash_command = "grep . * | LC_ALL=C sort | sha256sum"
+    result = subprocess.run(bash_command, shell=True,
+                            capture_output=True, text=True)
+    sha256_value = result.stdout.strip()
+    print(f"\nSHA256 hash result: {sha256_value}")
+
+    os.chdir("..")
+    del_folder = os.path.join(os.getcwd())
+    print(del_folder)
+    os.chdir("..")
+    os.chdir("..")
+    print(os.getcwd())
+    shutil.rmtree(del_folder)
+    return sha256_value
