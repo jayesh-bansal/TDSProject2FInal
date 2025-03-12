@@ -126,7 +126,7 @@ def GA1_8(question,zip_file):
     file_download_pattern = r"which has a single (.+\.csv) file inside\."
     if match := re.search(file_download_pattern, question):
         csv_filename = match.group(1)
-        extract_folder = extract_zip_file(os.path.join(os.getcwd(), 'uploads', zip_file), zip_file[:-4])
+        extract_folder = extract_zip_file(os.path.join(os.getcwd(), zip_file), zip_file[:-4])
         csv_file_path = os.path.join(extract_folder, csv_filename)
         # Read CSV file
         df = pd.read_csv(csv_file_path)
