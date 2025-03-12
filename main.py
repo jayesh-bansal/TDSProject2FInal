@@ -30,6 +30,6 @@ async def receive_question(
 ):
     return {
         "question": question,
-        "answer": "Processing...",
+        "answer": "Answer not found",
         "file received": file.filename if file else "No file uploaded",
     }
