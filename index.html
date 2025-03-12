@@ -68,6 +68,11 @@
         .btn-success:hover {
             background-color: #218838 !important;
         }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 
@@ -87,7 +92,7 @@
                         accept=".png,.json,.jsonl,.pdf,.xlsx,.csv,.zip,.jpg,.jpeg,.txt,.md,.webp">
                 </div>
                 <button type="submit" class="btn btn-success w-100 d-flex justify-content-center align-items-center">
-                    Submit <span class="loading"></span>
+                    Submit <span class="loading ms-2"></span>
                 </button>
             </form>
             <div class="mt-4">
@@ -107,7 +112,6 @@
             let responseBox = document.getElementById("response");
             let loadingIndicator = document.querySelector(".loading");
 
-            // Clear response box & show loading
             responseBox.textContent = "";
             loadingIndicator.style.display = "inline-block";
 
@@ -128,25 +132,13 @@
                     body: formData
                 });
 
+                let result = await response.json();
+
                 if (!response.ok) {
-                    let errorText = await response.text();
-                    let errorMessage = `Server Error: ${response.status}`;
-
-                    try {
-                        let errorJson = JSON.parse(errorText);
-                        if (errorJson.error) {
-                            errorMessage = errorJson.error;
-                        }
-                    } catch (e) {
-                        // If parsing fails, use default error message
-                    }
-
-                    throw new Error(errorMessage);
+                    throw new Error(result.details || `Server Error: ${response.status}`);
                 }
 
-                let result = await response.json();
                 responseBox.innerHTML = `<strong>Response:</strong>\n${JSON.stringify(result, null, 2)}`;
-
                 document.getElementById("tds-form").reset();
             } catch (error) {
                 responseBox.innerHTML = `<span class="error-message">Error: ${error.message}</span>`;
