@@ -35,7 +35,6 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pydantic==2.10.6
 pydantic_core==2.27.2
-pyee==8.2.2  # Correct version
 pyparsing==3.2.1
 pyppeteer==2.0.0
 pyquery==2.0.1
