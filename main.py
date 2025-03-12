@@ -23,7 +23,7 @@ async def serve_form():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
-@app.post("/api")
+@app.post("/api/")
 async def receive_question(
     question: str = Form(...),
     file: UploadFile = File(None)
