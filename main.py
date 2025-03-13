@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Form, File, UploadFile
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Form, File, UploadFile  # type: ignore
+from fastapi.responses import HTMLResponse  # type: ignore
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 import os
-import openpyxl
+import openpyxl  # type: ignore
 from processing import fetch_answer
+import re
 
 app = FastAPI()
 
@@ -60,6 +61,14 @@ def save_file(file: UploadFile):
     return file_path
 
 
+def get_file_path(question: str) -> str:
+    """Extracts a single filename from the question and returns its full path in the /uploads directory."""
+    match = re.search(r'([^\/\\\s]+?\.[a-zA-Z0-9]+)', question)
+    file = match.group(1) if match else None
+    file_path = os.path.join(os.getcwd(), "uploads", file) if file else None
+    return file_path if file_path and os.path.exists(file_path) else None
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
     file_path = os.path.join(os.path.dirname(__file__), "index.html")
@@ -72,11 +81,15 @@ async def serve_form():
 
 @app.post("/api/")
 async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
+    if 'where is ' in question.lower():
+        file_path = get_file_path(question)
+        return {"question": question, "answer": file_path if file_path else "File not found"}
+
     task_id = classify_task(question)
     if file:
         file_path = save_file(file)
         print(file_path)
-    if task_id in ['GA1.2', 'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16']:
+    if task_id in ['GA1.2', 'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17', 'GA1.18']:
         if file:
             answer = fetch_answer(
                 task_id=task_id, question=question, file_path=file_path)
@@ -85,12 +98,9 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
                 task_id=task_id, question=question, file_path="")
     elif task_id in ['GA1.6', 'GA1.11']:
         func_answer = fetch_answer(
-            task_id=task_id, question=question, file_path="")
-        if func_answer:
-            answer = func_answer
-        else:
-            answer = TASKS_ANSWERS.get(
-                task_id, "No answer found for this task.")
+            task_id=task_id, question=question, file_path=file_path if file else "")
+        answer = func_answer or TASKS_ANSWERS.get(
+            task_id, "No answer found for this task.")
     else:
         answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
 

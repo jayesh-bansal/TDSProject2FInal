@@ -1,7 +1,6 @@
 import pytz
 from datetime import datetime
 import requests
-import gspread
 import time
 import subprocess
 import hashlib
@@ -13,9 +12,9 @@ from datetime import datetime, timedelta
 import os
 import zipfile
 import shutil
-import pandas as pd
+import pandas as pd # type: ignore
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup # type: ignore
 
 
 def extract_zip_file(source: str, extract_folder: str) -> str:
@@ -49,7 +48,6 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 
     return extract_folder
 
-
 def fetch_answer(task_id, question, file_path):
     # if task_id == 'GA1.1': extract from excel
     if task_id == 'GA1.2':
@@ -61,7 +59,8 @@ def fetch_answer(task_id, question, file_path):
     if task_id == 'GA1.5':
         answer = GA1_5(question)
     if task_id == 'GA1.6':
-        answer = GA1_6("https://exam.sanand.workers.dev/tds-2025-01-ga1")
+        answer = GA1_6(question, file_path)
+        # answer = GA1_6("https://exam.sanand.workers.dev/tds-2025-01-ga1","")
     if task_id == 'GA1.7':
         answer = GA1_7(question)
     if task_id == 'GA1.8':
@@ -71,17 +70,22 @@ def fetch_answer(task_id, question, file_path):
     if task_id == 'GA1.10':
         answer = GA1_10(file_path)
     if task_id == 'GA1.11':
-        answer = GA1_11("https://exam.sanand.workers.dev/tds-2025-01-ga1")
+        answer = GA1_11(question, file_path)
+        # answer = GA1_11("https://exam.sanand.workers.dev/tds-2025-01-ga1","")
     if task_id == 'GA1.12':
         answer = GA1_12(question, file_path)
+    # if task_id == 'GA1.13': extract from excel
     if task_id == 'GA1.14':
         answer = GA1_14(question, file_path)
     if task_id == 'GA1.15':
         answer = GA1_15(question, file_path)
     if task_id == 'GA1.16':
         answer = GA1_16(file_path)
+    if task_id == 'GA1.17':
+        answer = GA1_17(question, file_path)
+    if task_id == 'GA1.18':
+        answer = GA1_18(question)
     return answer
-
 
 def GA1_2(question):
     email_pattern = r"email set to ([\w.%+-]+@[\w.-]+\.\w+)"
@@ -100,7 +104,6 @@ def GA1_2(question):
 
     return {"error": "Email not found in the input text"}
 
-
 def GA1_3(file_path):
     try:
         # Run Prettier and capture output
@@ -115,7 +118,6 @@ def GA1_3(file_path):
     except subprocess.CalledProcessError as e:
         return f"Error: {e}"
 
-
 def GA1_4(question):
     sum_seq_pattern = r"SUM\(ARRAY_CONSTRAIN\(SEQUENCE\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\),\s*(\d+),\s*(\d+)\)\)"
     if match := re.search(sum_seq_pattern, question):
@@ -126,7 +128,6 @@ def GA1_4(question):
         np.sum(np.arange(start, start + cols * step, step)[begin:end]))
     return answer
 
-
 def GA1_4_old():
     sheet_url = "https://docs.google.com/spreadsheets/d/1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ/edit"
     sheet_id = "1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ"
@@ -134,7 +135,6 @@ def GA1_4_old():
     cell = "A1"
     formula = "=SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))"
     return True
-
 
 def GA1_5(question):
     sum_take_sortby_pattern = r"SUM\(TAKE\(SORTBY\(\{([\d,]+)\},\s*\{([\d,]+)\}\),\s*(\d+),\s*(\d+)\)\)"
@@ -147,7 +147,6 @@ def GA1_5(question):
     sorted_numbers = [x for _, x in sorted(zip(sort_order, numbers))]
     answer = sum(sorted_numbers[begin:end])
     return answer
-
 
 def GA1_7(question):
     weekday_count_pattern = r"How many (\w+)s are there in the date range (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\?"
@@ -162,12 +161,18 @@ def GA1_7(question):
                          timedelta(days=i)).weekday() == weekdays[weekday_str])
     return answer
 
+def GA1_6(question, file_path=None):
+    source = file_path or (m.group(0) if (
+        m := re.search(r"https?://[^\s]+", question)) else None)
+    if not source:
+        return ""
 
-def GA1_6(url):
-    soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    html_data = requests.get(source).text if source.startswith(
+        ("http://", "https://")) else open(source, "r", encoding="utf-8").read()
+    soup = BeautifulSoup(html_data, "html.parser")
     hidden_input = soup.find("input", {"type": "hidden"})
-    return hidden_input.get("value") if hidden_input else ""
 
+    return hidden_input.get("value", "") if hidden_input else ""
 
 def GA1_8(question, zip_file):
     file_download_pattern = r"which has a single (.+\.csv) file inside\."
@@ -182,7 +187,6 @@ def GA1_8(question, zip_file):
         # Cleanup extracted files
         shutil.rmtree(extract_folder, ignore_errors=True)
     return answer
-
 
 def GA1_9(question):
     json_pattern = r"\[.*?\]|\{.*?\}"
@@ -208,7 +212,6 @@ def GA1_9(question):
 
     return None
 
-
 def GA1_10(file_path):
     data = {}
     # Check if file exists
@@ -227,19 +230,22 @@ def GA1_10(file_path):
         print(f"Error reading file: {e}")
         return "Error reading file"
     # Convert data to JSON
-    json_str = json.dumps(data, sort_keys=True, ensure_ascii=False)
+    json_str = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+    # print(json_str)
     # Calculate the hash of the JSON string
     json_hash = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
     return json_hash
 
-
-def GA1_11(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+def GA1_11(question, file_path=None):
+    source = file_path or (m.group(0) if (
+        m := re.search(r"https?://[^\s]+", question)) else None)
+    if not source:
+        return 0
+    html_data = requests.get(source).text if source.startswith(
+        ("http://", "https://")) else open(source, "r", encoding="utf-8").read()
+    soup = BeautifulSoup(html_data, "html.parser")
     divs = soup.select('div.foo[data-value]')
-    sum_values = sum(float(div['data-value']) for div in divs)
-    return sum_values
-
+    return int(sum(float(div['data-value']) for div in divs))
 
 def GA1_12(question, zip_path):
     # Regex patterns
@@ -282,7 +288,6 @@ def GA1_12(question, zip_path):
                         total_sum += float(value)
     return total_sum
 
-
 def GA1_14(question, zip_path):
     # Step 1: Extract words to replace and the replacement word from the question
     pattern = r'replace\s+all\s+"([^"]+)"\s+\(.*\)\s+with\s+"([^"]+)"'
@@ -324,7 +329,6 @@ def GA1_14(question, zip_path):
                     sha256_hash.update(chunk)
     # Return the final SHA-256 hash value
     return sha256_hash.hexdigest()
-
 
 def GA1_15(question, zip_path):
     # Extract file size and modification date from the question
@@ -393,7 +397,6 @@ def GA1_15(question, zip_path):
 
     return total_size
 
-
 def GA1_16(zip_path):
     folder_path, _ = os.path.splitext(zip_path)
     target_folder = os.path.join(folder_path, "renamed_files")
@@ -439,3 +442,17 @@ def GA1_16(zip_path):
     print(os.getcwd())
     shutil.rmtree(del_folder)
     return sha256_value
+
+def GA1_17(question: str, zip_path: str) -> int:
+    extract_folder = extract_zip_file(zip_path, zip_path[:-4])
+    # Matches any two filenames with extensions
+    files = re.findall(r'\b([^\/\\\s]+?\.[a-zA-Z0-9]+)\b', question)[:2]
+    with open(os.path.join(extract_folder, files[0])) as f1, open(os.path.join(extract_folder, files[1])) as f2:
+        return sum(l1.strip() != l2.strip() for l1, l2 in zip(f1, f2))
+
+def GA1_18(question: str) -> str:
+    """Extracts ticket type from the question and returns the corresponding SQL query dynamically."""
+    match = re.search(
+        r'in the\s+"([\w\s-]+)"\s+ticket type', question, re.IGNORECASE)
+    ticket_type = match.group(1).strip().lower() if match else None
+    return f"SELECT SUM(units * price) AS total_sales FROM tickets WHERE type like '%{ticket_type}%';" if ticket_type else None
