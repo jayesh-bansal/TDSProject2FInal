@@ -101,6 +101,13 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             task_id=task_id, question=question, file_path=file_path if file else "")
         answer = func_answer or TASKS_ANSWERS.get(
             task_id, "No answer found for this task.")
+    elif task_id in ['GA2.2']:
+        if file:
+            answer = fetch_answer(
+                task_id=task_id, question=question, file_path=file_path)
+        else:
+            answer = fetch_answer(
+                task_id=task_id, question=question, file_path="")
     else:
         answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
 
