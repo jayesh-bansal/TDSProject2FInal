@@ -1,21 +1,24 @@
 
-import pytz
-from datetime import datetime
-import requests
-import time
-import subprocess
-import hashlib
+from tempfile import NamedTemporaryFile
+import os
+import io
 import re
 import json
 import csv
-import numpy as np
-from datetime import datetime, timedelta
-import os
-import zipfile
+import time
 import shutil
-import pandas as pd  # type: ignore
+import zipfile
+import hashlib
+import tempfile
+import asyncio
+import subprocess
 import requests
+import numpy as np
+import pandas as pd  # type: ignore
+import pytz
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup  # type: ignore
+from fastapi import UploadFile  # type: ignore
 
 def extract_zip_file(source: str, extract_folder: str) -> str:
     """Extracts a ZIP file from a URL or local path."""
@@ -48,13 +51,24 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 
     return extract_folder
 
+# Install and run Visual Studio Code. In your Terminal ( or Command Prompt), type code - s and press Enter. Copy and paste the entire output below.
+# What is the output of code - s?
+
+# def GA1_1(question):
+
+# Running uv run - -with httpie - - https[URL] installs the Python package httpie and sends a HTTPS request to the URL.
+# Send a HTTPS request to https: // httpbin.org/get with the URL encoded parameter email set to 22f2001640@ds.study.iitm.ac. in
+# What is the JSON output of the command? (Paste only the JSON body, not the headers)
+
 def GA1_2(question):
-    email_pattern = r"email set to ([\w.%+-]+@[\w.-]+\.\w+)"
-    match = re.search(email_pattern, question)
+    pattern = r"Send a HTTPS request to (https?://[^\s]+) with the URL encoded parameter email set to ([\w.%+-]+@[\w.-]+\.\w+)"
+    match = re.search(pattern, question)
 
     if match:
-        email = match.group(1)
-        url = "https://httpbin.org/get"
+        # url = "https://httpbin.org/get"
+        url, email = match.groups()
+        print("URL:", url)
+        print("Email:", email)
 
         # Construct the HTTPie command
         command = ["http", "GET", url, f"email=={email}"]
@@ -63,43 +77,47 @@ def GA1_2(question):
         result = subprocess.run(command, capture_output=True, text=True)
         return result.stdout  # Returns the JSON response
 
-    return {"error": "Email not found in the input text"}
+    return {"error": "Url and Email not found in the input text"}
 
 
-def GA1_3(file_path):
+# Let's make sure you know how to use npx and prettier.
+# Download . In the directory where you downloaded it, make sure it is called README.md, and run npx - y prettier@3.4.2 README.md | sha256sum.
+# What is the output of the command?
+
+EXT_TO_PARSER = {".js": "babel", ".ts": "typescript", ".json": "json", ".css": "css",
+                 ".html": "html", ".md": "markdown", ".yaml": "yaml", ".yml": "yaml"}
+
+async def GA1_3(file: UploadFile):
     try:
-        # Run Prettier and capture output
-        prettier_cmd = ["npx", "-y", "prettier@3.4.2", file_path]
-        formatted_output = subprocess.run(
-            prettier_cmd, capture_output=True, text=True, check=True).stdout
+        process = await asyncio.create_subprocess_exec(
+            "npx", "-y", "prettier@3.4.2", "--parser", "markdown",
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
+        )
+        formatted_output, _ = await process.communicate(await file.read())
+        if not formatted_output : {"error": "Prettier failed"}
+        return hashlib.sha256(formatted_output).hexdigest()
 
-        # Compute SHA-256 hash
-        hash_value = hashlib.sha256(formatted_output.encode()).hexdigest()
-
-        return hash_value
-    except subprocess.CalledProcessError as e:
-        return f"Error: {e}"
-
+    except Exception as e:
+        return {"error": str(e)}
+    
+# Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets. 
+# (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
+#     What is the result?
 
 def GA1_4(question):
     sum_seq_pattern = r"SUM\(ARRAY_CONSTRAIN\(SEQUENCE\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\),\s*(\d+),\s*(\d+)\)\)"
     if match := re.search(sum_seq_pattern, question):
         rows, cols, start, step, begin, end = map(int, match.groups())
-    if begin > 0:
-        begin = begin-1
-    answer = int(
-        np.sum(np.arange(start, start + cols * step, step)[begin:end]))
-    return answer
+        if begin > 0:
+            begin = begin-1
+        answer = int(
+            np.sum(np.arange(start, start + cols * step, step)[begin:end]))
+        return answer
 
-
-def GA1_4_old():
-    sheet_url = "https://docs.google.com/spreadsheets/d/1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ/edit"
-    sheet_id = "1-A4hSDwAyJWD848AAKi2S178W2HU7klu7JozwclE8kQ"
-    sheet_name = "Sheet1"
-    cell = "A1"
-    formula = "=SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))"
-    return True
-
+# Let's make sure you can write formulas in Excel. Type this formula into Excel.
+# Note: This will ONLY work in Office 365.
+# =SUM(TAKE(SORTBY({11,14,12,9,5,4,13,0,1,6,7,12,10,12,0,11}, {10,9,13,2,11,8,16,14,7,15,5,4,6,1,3,12}), 1, 10))
+# What is the result?
 
 def GA1_5(question):
     sum_take_sortby_pattern = r"SUM\(TAKE\(SORTBY\(\{([\d,]+)\},\s*\{([\d,]+)\}\),\s*(\d+),\s*(\d+)\)\)"
@@ -107,12 +125,45 @@ def GA1_5(question):
         numbers = list(map(int, match.group(1).split(',')))
         sort_order = list(map(int, match.group(2).split(',')))
         begin, end = map(int, [match.group(3), match.group(4)])
-    if begin > 0:
-        begin = begin-1
-    sorted_numbers = [x for _, x in sorted(zip(sort_order, numbers))]
-    answer = sum(sorted_numbers[begin:end])
-    return answer
+        if begin > 0:
+            begin = begin-1
+        sorted_numbers = [x for _, x in sorted(zip(sort_order, numbers))]
+        answer = sum(sorted_numbers[begin:end])
+        return answer
 
+# Just above this paragraph, there's a hidden input with a secret value.
+# What is the value in the hidden input?
+
+def GA1_6(question, file_path=None):
+    try:
+        html_data = None
+
+        # Check for URL in the question
+        url_match = re.search(r"https?://[^\s]+", question)
+        if url_match:
+            source = url_match.group(0)
+            response = requests.get(source, timeout=5)
+            response.raise_for_status()
+            html_data = response.text
+        elif file_path:  # If a file is provided
+            with open(file_path, "r", encoding="utf-8") as file:
+                html_data = file.read()
+        else:  # No URL or file, extract from the question itself
+            soup = BeautifulSoup(question, "html.parser")
+            div_text = soup.find("div")
+            return div_text.get_text(strip=True) if div_text else ""
+
+        # Parse the HTML and extract hidden input
+        soup = BeautifulSoup(html_data, "html.parser")
+        hidden_input = soup.find("input", {"type": "hidden"})
+        return hidden_input.get("value", "") if hidden_input else ""
+
+    except (requests.RequestException, FileNotFoundError, IOError) as e:
+        print(f"Error: {e}")
+        return ""
+
+
+# How many Wednesdays are there in the date range 1980-01-25 to 2012-07-28?
 
 def GA1_7(question):
     weekday_count_pattern = r"How many (\w+)s are there in the date range (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})\?"
@@ -127,35 +178,36 @@ def GA1_7(question):
                          timedelta(days=i)).weekday() == weekdays[weekday_str])
     return answer
 
+# Download and unzip file  which has a single extract.csv file inside. 
+# What is the value in the "answer" column of the CSV file?
 
-def GA1_6(question, file_path=None):
-    source = file_path or (m.group(0) if (
-        m := re.search(r"https?://[^\s]+", question)) else None)
-    if not source:
-        return ""
-
-    html_data = requests.get(source).text if source.startswith(
-        ("http://", "https://")) else open(source, "r", encoding="utf-8").read()
-    soup = BeautifulSoup(html_data, "html.parser")
-    hidden_input = soup.find("input", {"type": "hidden"})
-
-    return hidden_input.get("value", "") if hidden_input else ""
-
-
-def GA1_8(question, zip_file):
+def GA1_8(question: str, zip_file: UploadFile):
     file_download_pattern = r"which has a single (.+\.csv) file inside\."
-    if match := re.search(file_download_pattern, question):
-        csv_filename = match.group(1)
-        extract_folder = extract_zip_file(os.path.join(
-            os.getcwd(), 'uploads', zip_file), zip_file[:-4])
-        csv_file_path = os.path.join(extract_folder, csv_filename)
-        # Read CSV file
-        df = pd.read_csv(csv_file_path)
-        answer = df["answer"].iloc[0] if "answer" in df.columns else "Column not found"
-        # Cleanup extracted files
-        shutil.rmtree(extract_folder, ignore_errors=True)
-    return answer
+    match = re.search(file_download_pattern, question)
 
+    if not match:
+        return "CSV filename not found in question"
+
+    csv_filename = match.group(1)
+
+    # Read ZIP file as bytes
+    zip_bytes = zip_file.file.read()
+
+    # Open ZIP file in memory
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+        if csv_filename not in zf.namelist():
+            return f"{csv_filename} not found in ZIP"
+
+        with zf.open(csv_filename) as csv_file:
+            df = pd.read_csv(csv_file)
+            return df["answer"].iloc[0] if "answer" in df.columns else "Column not found"
+
+    return "Failed to process ZIP file"
+
+# Let's make sure you know how to use JSON. Sort this JSON array of objects by the value of the age field. In case of a tie, sort by the name field. Paste the resulting JSON below without any spaces or newlines.
+
+# [{"name":"Alice","age":74},{"name":"Bob","age":87},{"name":"Charlie","age":92},{"name":"David","age":50},{"name":"Emma","age":47},{"name":"Frank","age":29},{"name":"Grace","age":44},{"name":"Henry","age":38},{"name":"Ivy","age":91},{"name":"Jack","age":62},{"name":"Karen","age":4},{"name":"Liam","age":91},{"name":"Mary","age":42},{"name":"Nora","age":82},{"name":"Oscar","age":50},{"name":"Paul","age":62}]
+# Sorted JSON:
 
 def GA1_9(question):
     json_pattern = r"\[.*?\]|\{.*?\}"
@@ -181,51 +233,52 @@ def GA1_9(question):
 
     return None
 
+# Download and use multi-cursors and convert it into a single JSON object, where key = value pairs are converted into {key: value, key: value, ...}.
+# What's the result when you paste the JSON at tools-in -data-science.pages.dev/jsonhash and click the Hash button?
 
-def GA1_10(file_path):
-    data = {}
-    # Check if file exists
-    if not os.path.isfile(file_path):
-        print(f"Error: File '{file_path}' not found.")
-        return "File not found"
-    # Read and process the file
+async def GA1_10(file: UploadFile):
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for line in file:
-                line = line.strip()
-                if '=' in line:
-                    key, value = line.split('=', 1)
-                    data[key.strip()] = value.strip()
-    except Exception as e:
-        print(f"Error reading file: {e}")
-        return "Error reading file"
-    # Convert data to JSON
-    json_str = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
-    # print(json_str)
-    # Calculate the hash of the JSON string
-    json_hash = hashlib.sha256(json_str.encode('utf-8')).hexdigest()
-    return json_hash
+        content = await file.read()
+        data = dict(
+            line.strip().split("=", 1)
+            for line in io.StringIO(content.decode("utf-8"))
+            if "=" in line
+        )
+    except Exception:
+        return {"error": "Error reading file"}
+    return hashlib.sha256(json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
+# Let's make sure you know how to select elements using CSS selectors. Find all <div>s having a foo class in the hidden element below. 
+# What's the sum of their data-value attributes?
+# Sum of data-value attributes:
 
-def GA1_11(question, file_path=None):
-    source = file_path or (m.group(0) if (
-        m := re.search(r"https?://[^\s]+", question)) else None)
-    if not source:
-        return 0
-    html_data = requests.get(source).text if source.startswith(
-        ("http://", "https://")) else open(source, "r", encoding="utf-8").read()
+def GA1_11(question):
+    html_data = question
     soup = BeautifulSoup(html_data, "html.parser")
+
+    # Extract divs with class "foo" and data-value attribute
     divs = soup.select('div.foo[data-value]')
-    return int(sum(float(div['data-value']) for div in divs))
 
+    # Convert data-value attributes to float and print them properly
+    values = [float(div['data-value']) for div in divs]
+    # print("Extracted values:", values)  # Correct debug print
 
-def GA1_12(question, zip_path):
+    return int(sum(values))
+
+# Download and process the files in which contains three files with different encodings:
+# data1.csv: CSV file encoded in CP-1252
+# data2.csv: CSV file encoded in UTF-8
+# data3.txt: Tab-separated file encoded in UTF-16
+# Each file has 2 columns: symbol and value. Sum up all the values where the symbol matches Œ OR ™ OR † across all three files.
+# What is the sum of all values associated with these symbols?
+
+async def GA1_12(question: str, zip_file: UploadFile):
     # Regex patterns
     file_pattern = r"(\w+\.\w+):\s*(?:CSV file|Tab-separated file) encoded in ([\w-]+)"
     symbol_pattern = r"where the symbol matches ((?:[\w\d]+|\W)(?:\s*OR\s*(?:[\w\d]+|\W))*)"
 
     # Extract file encodings
-    files = {match.group(1): match.group(2)
+    files = {match.group(1): match.group(2).lower().replace('cp-', 'cp')
              for match in re.finditer(file_pattern, question)}
 
     # Extract symbols
@@ -234,202 +287,227 @@ def GA1_12(question, zip_path):
         1).split(" OR ")) if symbols_match else set()
 
     total_sum = 0
-    # Extract ZIP
-    extract_folder = extract_zip_file(zip_path, zip_path[:-4])
-    print(extract_folder)
-    # Process extracted files
-    for file_name, encoding in files.items():
-        encoding = encoding.lower()
-        if 'cp-' in encoding:
-            encoding = encoding.replace('cp-', 'cp')
-        target_symbols = list(target_symbols)
-        print(file_name, encoding, target_symbols)
-        file_path = os.path.join(extract_folder, file_name)
-        if file_name.endswith(".csv"):
-            with open(file_path, mode='r', encoding=encoding) as file:
-                reader = csv.reader(file)
-                for row in reader:
-                    symbol, value = row
-                    if symbol in target_symbols:
-                        total_sum += float(value)
-        elif file_name.endswith(".txt"):
-            with open(file_path, mode='r', encoding=encoding) as file:
-                for line in file:
-                    symbol, value = line.strip().split('\t')
-                    if symbol in target_symbols:
-                        total_sum += float(value)
+
+    # Read ZIP file in-memory
+    zip_bytes = await zip_file.read()
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zip_ref:
+        for file_name in files:
+            encoding = files[file_name]
+            if file_name not in zip_ref.namelist():
+                continue
+
+            with zip_ref.open(file_name) as file:
+                decoded_content = io.TextIOWrapper(file, encoding=encoding)
+
+                if file_name.endswith(".csv"):
+                    reader = csv.reader(decoded_content)
+                    for row in reader:
+                        if len(row) >= 2 and row[0] in target_symbols:
+                            total_sum += int(row[1])
+
+                elif file_name.endswith(".txt"):
+                    for line in decoded_content:
+                        parts = line.strip().split("\t")
+                        if len(parts) >= 2 and parts[0] in target_symbols:
+                            total_sum += int(parts[1])
+
     return total_sum
 
+# Let's make sure you know how to use GitHub. Create a GitHub account if you don't have one. Create a new public repository. Commit a single JSON file called email.json with the value {"email": "22f2001640@ds.study.iitm.ac.in"} and push it.
+# Enter the raw Github URL of email.json so we can verify it. (It might look like https://raw.githubusercontent.com/[GITHUB ID]/[REPO NAME]/main/email.json.)
 
-def GA1_14(question, zip_path):
+# def GA1_13(question):
+
+# Download  and unzip it into a new folder, then replace all "IITM" ( in upper, lower, or mixed case) with "IIT Madras" in all files. Leave everything as- is - don't change the line endings.
+# What does running cat * | sha256sum in that folder show in bash?
+
+async def GA1_14(question: str, zip_file: UploadFile):
     # Step 1: Extract words to replace and the replacement word from the question
-    pattern = r'replace\s+all\s+"([^"]+)"\s+\(.*\)\s+with\s+"([^"]+)"'
+    pattern=r'replace all "([^"]+)" \(in upper, lower, or mixed case\) with "([^"]+)" in all files'
     match = re.search(pattern, question, re.IGNORECASE)
-    if match:
-        word_to_replace = match.group(1)  # The word to replace
-        replacement_word = match.group(2)  # The replacement word
-    else:
+    if not match:
         raise ValueError("Invalid question format: Unable to extract words.")
 
-    folder_path = zip_path[:-4]
-    # Step 2: Unzip files into the target folder
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(folder_path)
-        print(f"Unzipped files to {folder_path}")
-    # Step 3: Replace words in all files
-    for filename in os.listdir(folder_path):
-        filepath = os.path.join(folder_path, filename)
+    word_to_replace = match.group(1)  # The word to replace
+    replacement_word = match.group(2)  # The replacement word
 
-        if os.path.isfile(filepath):
-            with open(filepath, 'r', encoding='utf-8') as file:
-                content = file.read()
-            # Replace the word (case insensitive)
-            updated_content = re.sub(
-                re.escape(word_to_replace), replacement_word, content, flags=re.IGNORECASE)
-            # Write the modified content back to the file (keeping the original line endings)
-            with open(filepath, 'w', encoding='utf-8') as file:
-                file.write(updated_content)
-    # Step 4: Calculate the SHA-256 hash of the concatenated files
+    print("Word to replace:", word_to_replace)
+    print("Replacement word:", replacement_word)
+
+    # Step 2: Read ZIP file in-memory
+    zip_bytes = await zip_file.read()
     sha256_hash = hashlib.sha256()
-    # Sort files to ensure the same order
-    files = sorted(os.listdir(folder_path))
-    for filename in files:
-        filepath = os.path.join(folder_path, filename)
 
-        if os.path.isfile(filepath):
-            with open(filepath, 'rb') as file:
-                while chunk := file.read(4096):
-                    sha256_hash.update(chunk)
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zip_ref:
+        file_contents = {}
+
+        # Read and modify file contents
+        for filename in sorted(zip_ref.namelist()):  # Ensure consistent order
+            with zip_ref.open(filename) as file:
+                content = file.read().decode("utf-8")  # Decode file content
+                updated_content = re.sub(
+                    re.escape(word_to_replace), replacement_word, content, flags=re.IGNORECASE)
+                file_contents[filename] = updated_content.encode(
+                    "utf-8")  # Store modified content
+
+        # Compute hash from modified contents
+        for filename in sorted(file_contents.keys()):
+            sha256_hash.update(file_contents[filename])
+
     # Return the final SHA-256 hash value
     return sha256_hash.hexdigest()
 
+# Download and extract it. Use ls with options to list all files in the folder along with their date and file size.
+# What's the total size of all files at least 3352 bytes large and modified on or after Fri, 17 Aug, 2018, 4: 06 am IST?'
 
-def GA1_15(question, zip_path):
+async def GA1_15(question: str, zip_file: UploadFile):
     # Extract file size and modification date from the question
     size_pattern = r"at least (\d+) bytes"
     date_pattern = r"modified on or after (.*) IST"
 
     # Extract file size
     size_match = re.search(size_pattern, question)
-    if size_match:
-        min_size = int(size_match.group(1))
-    else:
+    if not size_match:
         raise ValueError("No file size criterion found in the question.")
+    min_size = int(size_match.group(1))
 
     # Extract modification date
     date_match = re.search(date_pattern, question)
-    if date_match:
-        date_str = date_match.group(1).replace(' IST', '').strip()
-        try:
-            target_timestamp = datetime.strptime(
-                date_str, "%a, %d %b, %Y, %I:%M %p")
-            target_timestamp = pytz.timezone(
-                "Asia/Kolkata").localize(target_timestamp)
-        except ValueError as e:
-            raise ValueError(f"Date format error: {e}")
-    else:
-        raise ValueError(
-            "No modification date criterion found in the question.")
+    if not date_match:
+        raise ValueError("No modification date criterion found in the question.")
 
-    # Determine folder path from the zip file
-    folder_path, _ = os.path.splitext(zip_path)
+    date_str = date_match.group(1).replace(' IST', '').strip()
+    try:
+        target_timestamp = datetime.strptime(date_str, "%a, %d %b, %Y, %I:%M %p")
+        target_timestamp = pytz.timezone("Asia/Kolkata").localize(target_timestamp)
+    except ValueError as e:
+        raise ValueError(f"Date format error: {e}")
 
-    # Extract files preserving timestamps
-    if os.name == 'nt':  # Windows
-        try:
-            subprocess.run(
-                ["7z", "x", zip_path, f"-o{folder_path}"], check=True)
-        except FileNotFoundError:
-            raise RuntimeError(
-                "7-Zip not found. Please install or add it to the system PATH.")
-        except subprocess.CalledProcessError:
-            raise RuntimeError("7-Zip extraction failed.")
-    else:  # Linux or macOS
-        try:
-            subprocess.run(
-                ["unzip", "-o", zip_path, "-d", folder_path], check=True)
-        except FileNotFoundError:
-            raise RuntimeError(
-                "unzip not found. Please install unzip utility.")
-        except subprocess.CalledProcessError:
-            raise RuntimeError("unzip extraction failed.")
-
-    # Initialize total size
+    # Read ZIP file in-memory
+    zip_bytes = await zip_file.read()
     total_size = 0
 
-    # List files and check if they meet the criteria
-    for filename in os.listdir(folder_path):
-        filepath = os.path.join(folder_path, filename)
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zip_ref:
+        for zip_info in zip_ref.infolist():
+            # Convert ZIP modification time to datetime with IST timezone
+            file_mtime = datetime(*zip_info.date_time)
+            file_mtime = pytz.timezone("Asia/Kolkata").localize(file_mtime)
 
-        if os.path.isfile(filepath):
-            file_size = os.path.getsize(filepath)
-            file_mtime = datetime.fromtimestamp(os.path.getmtime(
-                filepath), tz=pytz.timezone("Asia/Kolkata"))
-
-            if file_size >= min_size and file_mtime >= target_timestamp:
-                total_size += file_size
+            # Check if file meets size and modification date criteria
+            if zip_info.file_size >= min_size and file_mtime >= target_timestamp:
+                total_size += zip_info.file_size
 
     return total_size
 
+# Download and extract it. Use mv to move all files under folders into an empty folder. Then rename all files replacing each digit with the next. 1 becomes 2, 9 becomes 0, a1b9c.txt becomes a2b0c.txt.
+# What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?
 
-def GA1_16(zip_path):
-    folder_path, _ = os.path.splitext(zip_path)
-    target_folder = os.path.join(folder_path, "renamed_files")
-    os.makedirs(target_folder, exist_ok=True)
+async def GA1_16_old(zip_file: UploadFile):
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
+    renamed_dir = tempfile.mkdtemp()
 
-    # Extract ZIP
-    if os.name == 'nt':  # Windows
-        subprocess.run(["7z", "x", zip_path, f"-o{folder_path}"], check=True)
-    else:  # Linux/macOS
-        subprocess.run(
-            ["unzip", "-o", zip_path, "-d", folder_path], check=True)
+    # Read ZIP file in-memory
+    zip_bytes = await zip_file.read()
 
-    # Move files to target folder
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            shutil.move(os.path.join(root, file),
-                        os.path.join(target_folder, file))
+    # Extract ZIP contents to temp_dir
+    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zip_ref:
+        zip_ref.extractall(temp_dir)
 
-    # Rename files: replace digits with the next digit
+    # Function to rename files by incrementing digits
     def rename_file(file_name):
         return ''.join([str((int(ch) + 1) % 10) if ch.isdigit() else ch for ch in file_name])
 
-    for filename in os.listdir(target_folder):
-        old_path = os.path.join(target_folder, filename)
+    # Move and rename files
+    for filename in os.listdir(temp_dir):
+        old_path = os.path.join(temp_dir, filename)
+        # if not os.path.isfile(old_path):
+        #     continue  # Skip directories
         new_filename = rename_file(filename)
-        new_path = os.path.join(target_folder, new_filename)
-        os.rename(old_path, new_path)
+        new_path = os.path.join(renamed_dir, new_filename)
+        shutil.move(old_path, new_path)
 
-    # Move into the renamed_files folder
-    os.chdir(os.path.join(folder_path, "renamed_files"))
-    # Run the bash command
-    bash_command = "grep . * | LC_ALL=C sort | sha256sum"
-    result = subprocess.run(bash_command, shell=True,
-                            capture_output=True, text=True)
-    sha256_value = result.stdout.strip()
-    print(f"\nSHA256 hash result: {sha256_value}")
+    os.chdir(renamed_dir)
+    # Concatenate file contents and compute SHA-256 hash
+    sha256_hash = hashlib.sha256()
+    # for filename in sorted(os.listdir(renamed_dir)):  # Sort for consistency
+    #     file_path = os.path.join(renamed_dir, filename)
+    #     with open(file_path, "rb") as f:
+    #         while chunk := f.read(4096):
+    #             sha256_hash.update(chunk)
 
-    os.chdir("..")
-    del_folder = os.path.join(os.getcwd())
-    print(del_folder)
-    os.chdir("..")
-    os.chdir("..")
-    print(os.getcwd())
-    shutil.rmtree(del_folder)
-    return sha256_value
+    # Cleanup temporary directories
+    shutil.rmtree(temp_dir)
+    shutil.rmtree(renamed_dir)
+
+    return sha256_hash.hexdigest()
 
 
-def GA1_17(question: str, zip_path: str) -> int:
-    extract_folder = extract_zip_file(zip_path, zip_path[:-4])
-    # Matches any two filenames with extensions
+async def GA1_16(zip_file: UploadFile):
+    extract_folder = "extracted"
+    merged_folder = "merged_folder"
+
+    # Ensure clean directories
+    shutil.rmtree(extract_folder, ignore_errors=True)
+    shutil.rmtree(merged_folder, ignore_errors=True)
+    os.makedirs(extract_folder, exist_ok=True)
+    os.makedirs(merged_folder, exist_ok=True)
+
+    # Save uploaded file temporarily
+    with NamedTemporaryFile(delete=False) as temp_zip:
+        temp_zip.write(await zip_file.read())
+        temp_zip_path = temp_zip.name
+
+    # Extract ZIP file
+    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_folder)
+
+    # Move all files from subdirectories into merged_folder
+    subprocess.run(
+        f'find "{extract_folder}" -type f -exec mv {{}} "{merged_folder}" \\;', shell=True, check=True)
+
+    # Rename files (Shift digits: 1 → 2, 9 → 0)
+    os.chdir(merged_folder)
+    for file in os.listdir():
+        newname = file.translate(str.maketrans("0123456789", "1234567890"))
+        if file != newname:
+            os.rename(file, newname)
+
+    # Run checksum command
+    result = subprocess.run('grep . * | LC_ALL=C sort | sha256sum',
+                            shell=True, text=True, capture_output=True)
+
+    # Cleanup temp files
+    os.remove(temp_zip_path)
+
+    # Return checksum result
+    return result.stdout.strip()
+
+# Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
+# How many lines are different between a.txt and b.txt?
+
+async def GA1_17(question: str, zip_file: UploadFile) -> int:
     files = re.findall(r'\b([^\/\\\s]+?\.[a-zA-Z0-9]+)\b', question)[:2]
-    with open(os.path.join(extract_folder, files[0])) as f1, open(os.path.join(extract_folder, files[1])) as f2:
-        return sum(l1.strip() != l2.strip() for l1, l2 in zip(f1, f2))
+    with zipfile.ZipFile(io.BytesIO(await zip_file.read())) as z:
+        extracted = {f: z.read(f).decode(errors="ignore").splitlines()
+                     for f in files if f in z.namelist()}
+    return sum(l1.strip() != l2.strip() for l1, l2 in zip(*extracted.values())) if len(extracted) == 2 else -1
 
+
+# There is a tickets table in a SQLite database that has columns type, units, and price. Each row is a customer bid for a concert ticket.
+
+# type	units	price
+# SILVER	591	1.69
+# Bronze	537	1.53
+# Gold	771	1.21
+# gold	565	1.42
+# Bronze	303	0.8
+# ...
+# What is the total sales of all the items in the "Gold" ticket type? Write SQL to calculate it.
 
 def GA1_18(question: str) -> str:
     """Extracts ticket type from the question and returns the corresponding SQL query dynamically."""
     match = re.search(
-        r'in the\s+"([\w\s-]+)"\s+ticket type', question, re.IGNORECASE)
+        r'What is the total sales of all the items in the\s+"([\w\s-]+)"\s+ticket type', question, re.IGNORECASE)
     ticket_type = match.group(1).strip().lower() if match else None
     return f"SELECT SUM(units * price) AS total_sales FROM tickets WHERE type like '%{ticket_type}%';" if ticket_type else None

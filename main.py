@@ -5,6 +5,7 @@ import os
 import openpyxl  # type: ignore
 from processing import fetch_answer
 import re
+import stat
 
 app = FastAPI()
 
@@ -56,6 +57,8 @@ def save_file(file: UploadFile):
         # Write the file content manually
         with open(file_path, "wb") as buffer:
             buffer.write(file.file.read())
+        # Set file permissions to 777 (read, write, execute for all)
+        os.chmod(file_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
     except Exception as e:
         return f"Error saving file: {str(e)}"
     return file_path
@@ -78,41 +81,78 @@ async def serve_form():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
+async def read_answer(task_id: str, question: str):
+    print("reading from json")
+    answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
+    return answer
 
 @app.post("/api/")
 async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
-    if 'where is ' in question.lower():
-        file_path = get_file_path(question)
-        return {"question": question, "answer": file_path if file_path else "File not found"}
+    # if 'where is ' in question.lower():
+    #     file_path = get_file_path(question)
+    #     return {"question": question, "answer": file_path if file_path else "File not found"}
 
     task_id = classify_task(question)
-    if file:
-        file_path = save_file(file)
-        print(file_path)
-    if task_id in ['GA1.2', 'GA1.3', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.8', 'GA1.9', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17', 'GA1.18']:
-        if file:
-            answer = fetch_answer(
-                task_id=task_id, question=question, file_path=file_path)
-        else:
-            answer = fetch_answer(
-                task_id=task_id, question=question, file_path="")
-    elif task_id in ['GA1.6', 'GA1.11']:
-        func_answer = fetch_answer(
-            task_id=task_id, question=question, file_path=file_path if file else "")
-        answer = func_answer or TASKS_ANSWERS.get(
-            task_id, "No answer found for this task.")
-    elif task_id in ['GA2.2']:
-        if file:
-            answer = fetch_answer(
-                task_id=task_id, question=question, file_path=file_path)
-        else:
-            answer = fetch_answer(
-                task_id=task_id, question=question, file_path="")
-    else:
-        answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
 
-    return {
+    if task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
+            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    elif task_id in ['GA1.6', 'GA1.11']:
+        func_answer=""
+        if file:
+            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+        answer = func_answer or await read_answer(task_id=task_id,question=question)
+    elif task_id in ['GA1.3', 'GA1.8', 'GA1.10', 'GA1.12','GA1.14','GA1.15', 'GA1.16', 'GA1.17']:
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA2.2','GA2.4']:
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA2.5']:
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
+            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    elif task_id in ['GA2.9']:
+        if file:
+            file_path = save_file(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA5.1','GA5.2','GA5.3','GA5.4','GA5.5','GA5.6','GA5.7']:
+        if file:
+            file_path = save_file(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA5.8']:
+        answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    elif task_id in ['GA5.10']:
+        if file:
+            file_path = save_file(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            return {"answer": answer}
+    else:
+        if file:
+            file_path = save_file(file)
+        answer = await read_answer(task_id=task_id, question=question)
+
+    if isinstance(answer, int):
+        answer = str(answer)
+    if isinstance(answer, float):
+        answer = str(answer)
+    
+    output = {
         "question": question,
         "task": task_id,
         "answer": answer,
         "file received": file.filename if file else "No file uploaded", }
+    print(output)
+    print()
+    return {"answer": answer}
