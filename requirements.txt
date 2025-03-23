@@ -63,3 +63,4 @@ zipp==3.21.0
 fuzzywuzzy
 python-Levenshtein
 pycountry
+jellyfish
