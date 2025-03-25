@@ -51,7 +51,6 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 
     return extract_folder
 
-
 async def GA2_2(file, max_size=1500, target_width=800):
     temp_dir = "/tmp/" if os.getenv("VERCEL") else "compressed_images/"
     os.makedirs(temp_dir, exist_ok=True)
@@ -82,7 +81,6 @@ async def GA2_2(file, max_size=1500, target_width=800):
     print(f"Saved at: {temp_path}, Size: {os.path.getsize(temp_path)} bytes")
     return encoded  # Returning both path & Base64
 
-
 def GA2_4(question: str):
    email = re.findall(
        r'Run this program on Google Colab, allowing all required access to your email ID: ([\w. % +-]+@[\w.-] +\.\w+)', question)[0]
@@ -94,11 +92,14 @@ def GA2_4(question: str):
 
 def download_image(url, filename="lenna.webp"):
     """Downloads an image from the given URL and returns its absolute path."""
+    BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
     response = requests.get(url, stream=True)
     if response.ok:
         with open(filename, "wb") as file:
             file.write(response.content)
-        return os.path.abspath(filename)
+            if BASE_DIR == ".":
+               return os.path.abspath(filename)
+            return os.path.abspath(os.path.join(BASE_DIR, filename))
     raise Exception(
         f"Failed to download image, status code: {response.status_code}")
 
@@ -111,11 +112,14 @@ def count_light_pixels(image_path: str, threshold: float = 0.814):
     print(f'Number of pixels with lightness > {threshold}: {light_pixels}')
     return light_pixels
 
-async def GA2_5(image_path: str):
+async def GA2_5(question: str, image_path: str):
     if image_path=="":
         image_path = download_image("https://exam.sanand.workers.dev/lenna.webp")
-    light_pixels = count_light_pixels(image_path)
-    return light_pixels
+    threshold = re.search(
+        r'Number of pixels with lightness > (\d+\.\d+)', question)[1]
+    print(image_path, threshold)
+    light_pixels = count_light_pixels(image_path, float(threshold))
+    return int(light_pixels)
 
 async def load_student_data(file: UploadFile):
     """Load student data from the uploaded CSV file."""
@@ -140,7 +144,6 @@ async def load_student_data(file: UploadFile):
 async def load_and_set_data(file: UploadFile):
     """Asynchronously load and set the student data."""
     return await load_student_data(file)
-
 
 def GA2_9_old(file_path: str, port: int):
     """Initializes FastAPI with student data loaded from an uploaded CSV file and runs the API in a background process using subprocess."""
