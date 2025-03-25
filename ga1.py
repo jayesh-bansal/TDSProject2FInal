@@ -469,7 +469,11 @@ async def GA1_16(zip_file: UploadFile):
     else:
         return await GA1_16_Vercel(BASE_DIR,zip_file)
     
-async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
+# Use "/tmp/" for Vercel, or local paths when running locally
+BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
+
+
+async def GA1_16_Vercel(zip_file: UploadFile):
     extract_folder = os.path.join(BASE_DIR, "extracted")
     merged_folder = os.path.join(BASE_DIR, "merged_folder")
 
@@ -505,20 +509,21 @@ async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
             shutil.move(os.path.join(merged_folder, file),
                         os.path.join(merged_folder, newname))
 
-    # Change working directory to merged_folder for hashing
+    # Change to merged folder for hashing
     os.chdir(merged_folder)
 
-    # Simulate `grep . * | LC_ALL=C sort | sha256sum`
+    # Mimic `grep . * | LC_ALL=C sort | sha256sum`
     sorted_lines = []
-    for file in sorted(os.listdir()):  # Sort files for consistent hashing
+    for file in sorted(os.listdir(), key=lambda f: f.encode("utf-8")):  # Byte-wise sorting
         async with aiofiles.open(file, 'r', encoding='utf-8', errors='ignore') as f:
             lines = await f.readlines()
-            # Mimic `grep . *`
-            sorted_lines.extend([f"{file}:{line}" for line in lines])
+            for line in lines:
+                if line.strip():  # Ignore empty lines like `grep . *`
+                    sorted_lines.append(f"{file}:{line.strip()}")
 
-    sorted_lines.sort()  # Simulate `LC_ALL=C sort`
+    sorted_lines.sort(key=lambda x: x.encode("utf-8"))  # Mimic `LC_ALL=C sort`
 
-    # Compute SHA-256 on sorted output
+    # Compute SHA-256 checksum on sorted content
     hash_obj = hashlib.sha256()
     for line in sorted_lines:
         hash_obj.update(line.encode("utf-8"))
@@ -528,7 +533,6 @@ async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
     # Cleanup temp files
     os.remove(temp_zip_path)
 
-    # Return checksum result
     return checksum_result
     
 # Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
