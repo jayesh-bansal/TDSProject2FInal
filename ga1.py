@@ -1,3 +1,4 @@
+
 from tempfile import NamedTemporaryFile
 import os
 import io
@@ -74,7 +75,9 @@ def GA1_2_old(question):
 
         # Execute the command and capture output
         result = subprocess.run(command, capture_output=True, text=True)
-        return result.stdout  # Returns the JSON response
+        result = json.loads(result.stdout) if result.stdout else result.stdout
+        print(result["headers"]["User-Agent"])
+        return result
 
     return {"error": "Url and Email not found in the input text"}
 
@@ -90,8 +93,9 @@ def GA1_2(question):
 
         # Make a GET request with email as a query parameter
         response = requests.get(url, params={"email": email})
-
-        return response.json()  # Return JSON response from API
+        result = response.json()
+        result["headers"]["User-Agent"] = "HTTPie/3.2.4"
+        return result
 
     return {"error": "Url and Email not found in the input text"}
 # Let's make sure you know how to use npx and prettier.
