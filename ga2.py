@@ -121,6 +121,15 @@ async def GA2_5(question: str, image_path: str):
     light_pixels = count_light_pixels(image_path, float(threshold))
     return int(light_pixels)
 
+async def GA2_5_file(question: str, file: UploadFile):
+    threshold = re.search(
+        r'Number of pixels with lightness > (\d+\.\d+)', question)[1]
+    threshold = float(threshold)
+    image_path = io.BytesIO(await file.read())
+    print(image_path, threshold)
+    light_pixels = count_light_pixels(image_path, threshold)
+    return int(light_pixels)
+
 async def load_student_data(file: UploadFile):
     """Load student data from the uploaded CSV file."""
     students_data = []
@@ -139,7 +148,6 @@ async def load_student_data(file: UploadFile):
     
     print(students_data)
     return students_data
-
 
 async def load_and_set_data(file: UploadFile):
     """Asynchronously load and set the student data."""

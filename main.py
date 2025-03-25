@@ -125,8 +125,12 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
         else:
             answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ["GA3.1","GA3.2"]:
+    elif task_id in ["GA3.1", "GA3.2", "GA3.3","GA3.5","GA3.6"]:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    elif task_id in ["GA3.4"]:
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
     elif task_id in ['GA5.1','GA5.2','GA5.3','GA5.4','GA5.5','GA5.6','GA5.7']:
         if file:
             file_path = save_file(file)
@@ -148,6 +152,8 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     if isinstance(answer, int):
         answer = str(answer)
     if isinstance(answer, float):
+        answer = str(answer)
+    if isinstance(answer, list):
         answer = str(answer)
     
     output = {"question": question,"task": task_id,"answer": answer,"file received": file.filename if file else "No file uploaded", }

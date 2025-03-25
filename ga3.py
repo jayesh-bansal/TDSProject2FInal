@@ -1,11 +1,14 @@
 import re
 import httpx
 import os
+import json
+import base64
+from fastapi import UploadFile  # type: ignore
 
 BASE_URL = "https://aiproxy.sanand.workers.dev/openai/v1"
 
 
-def GA3_1(question):
+def GA3_1(question: str):
     match = re.search(r"meaningless text:\s*(.*?)\s*Write a",
                       question, re.DOTALL)
 
@@ -54,7 +57,7 @@ print(response.json())"""
 # print(GA3_1(question))
 
 
-def GA3_2(question):
+def GA3_2(question: str):
     match = re.search(
         r"List only the valid English words from these:(.*?)\s*\.\.\. how many input tokens does it use up?",
         question, re.DOTALL
@@ -87,3 +90,139 @@ def GA3_2(question):
 # ... how many input tokens does it use up?
 # """
 # print(GA3_2(question))
+
+def GA3_3(question: str):
+    match = re.search(
+        r"Uses structured outputs to respond with an object addresses which is an array of objects with required fields: "
+        r"(\w+)\s*\(\s*(\w+)\s*\)\s*"
+        r"(\w+)\s*\(\s*(\w+)\s*\)\s*"
+        r"(\w+)\s*\(\s*(\w+)\s*\)",
+        question
+    )
+
+    if match:
+        field1, type1, field2, type2, field3, type3 = match.groups()
+    else:
+        print("No match found")
+        return None  # Return None if no match is found
+
+    # Ensure the type values are correctly formatted in JSON
+    type1 = type1.lower()
+    type2 = type2.lower()
+    type3 = type3.lower()
+
+    json_data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "Respond in JSON"},
+            {"role": "user", "content": "Generate 10 random addresses in the US"}
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "addresses",
+                "schema": {
+                    "type": "object",
+                    "description": "An address object to insert into the database",
+                    "properties": {
+                        "addresses": {
+                            "type": "array",
+                            "description": "A list of random addresses",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    field1: {"type": type1, "description": f"The {field1} of the address."},
+                                    field2: {"type": type2, "description": f"The {field2} of the address."},
+                                    field3: {
+                                        "type": type3, "description": f"The {field3} of the address."}
+                                },
+                                "additionalProperties": False,
+                                "required": [field1, field2, field3]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return json_data  # Return parsed JSON object
+
+
+# question="""
+# As part of the integration process, you need to write the body of the request to an OpenAI chat completion call that:
+
+# Uses model gpt-4o-mini
+# Has a system message: Respond in JSON
+# Has a user message: Generate 10 random addresses in the US
+# Uses structured outputs to respond with an object addresses which is an array of objects with required fields: zip (number) city (string) longitude (number) .
+# Sets additionalProperties to false to prevent additional properties.
+# Note that you don't need to run the request or use an API key; your task is simply to write the correct JSON body.
+
+# What is the JSON body we should send to https://api.openai.com/v1/chat/completions for this? (No need to run it or to use an API key. Just write the body of the request below.)
+# """
+# print(GA3_3(question))
+
+async def GA3_4(question: str, file: UploadFile):
+    if not file or not file.filename:
+        return {"error": "No file uploaded"}
+
+    binary_data = await file.read()
+    if not binary_data:
+        return {"error": "Uploaded file is empty"}
+
+    image_b64 = base64.b64encode(binary_data).decode()
+
+    json_data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Extract text from this image."},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{image_b64}"}
+                    }
+                ]
+            }
+        ]
+    }
+
+    return json_data
+
+
+def GA3_5(question: str):
+    matches = re.findall(
+        r"Dear user, please verify your transaction code (\d+) sent to ([\w.%+-]+@[\w.-]+\.\w+)", question)
+
+    if matches:
+        extracted_messages = [
+            f"Dear user, please verify your transaction code {code} sent to {email}" for code, email in matches]
+        print(extracted_messages)  # Debugging line
+
+        result = {
+            "model": "text-embedding-3-small",
+            "input": extracted_messages
+        }
+        return result  # Convert the dictionary to a string and return the     result
+    else:
+        return {"error": "Invalid format"}
+
+
+def GA3_6(question: str):
+    python_code = """
+import numpy as np
+def most_similar(embeddings):
+    phrases = list(embeddings.keys())
+    embedding_values = np.array(list(embeddings.values()))
+    similarity_matrix = np.dot(embedding_values, embedding_values.T)
+    norms = np.linalg.norm(embedding_values, axis=1)
+    similarity_matrix = similarity_matrix / np.outer(norms, norms)
+    np.fill_diagonal(similarity_matrix, -1)
+    max_indices = np.unravel_index(np.argmax(similarity_matrix, axis=None), similarity_matrix.shape)
+    phrase1,phrase2 = phrases[max_indices[0]],phrases[max_indices[1]]
+    return (phrase1, phrase2)
+    """
+    print(python_code)
+    return python_code

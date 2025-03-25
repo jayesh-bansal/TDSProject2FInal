@@ -1,10 +1,11 @@
 from ga1 import GA1_2, GA1_3, GA1_4, GA1_5, GA1_6, GA1_7, GA1_8, GA1_9, GA1_10, GA1_11, GA1_12, GA1_14, GA1_15, GA1_16, GA1_17, GA1_18
-from ga2 import GA2_2, GA2_4, GA2_5, GA2_9_old
+from ga2 import GA2_2, GA2_4, GA2_5, GA2_5_file, GA2_9_old
 from ga2_9 import read_student_data, get_students
-from ga3 import GA3_1, GA3_2
+from ga3 import GA3_1, GA3_2, GA3_3, GA3_4, GA3_5, GA3_6
 from ga5 import GA5_1, GA5_2, GA5_3, GA5_4, GA5_5, GA5_6, GA5_7, GA5_8, GA5_10
 import asyncio
 import subprocess
+
 
 async def fetch_answer(task_id, question, file_path):
     # if task_id == 'GA1.1': extract from excel
@@ -48,13 +49,17 @@ async def fetch_answer(task_id, question, file_path):
     if task_id == 'GA2.4':
         answer = await GA2_4(question)
     if task_id == 'GA2.5':
-        answer = await GA2_5(file_path)
+        if file_path == "":
+            answer = await GA2_5(question, "")
+        else:
+            answer = await GA2_5_file(question, file_path)
     # if task_id == 'GA2.6': extract from excel
     # if task_id == 'GA2.7': extract from excel
     # if task_id == 'GA2.8': extract from excel
     if task_id == 'GA2.9':
         port = 10000
-        subprocess.Popen(["uvicorn", "ga2_9:app", "--host","0.0.0.0", "--port", str(port)])
+        subprocess.Popen(["uvicorn", "ga2_9:app", "--host",
+                         "0.0.0.0", "--port", str(port)])
         # GA2_9_old(file_path,port)
         # process.terminate()
         answer = f"http://127.0.0.1:{port}/api"
@@ -63,6 +68,17 @@ async def fetch_answer(task_id, question, file_path):
         answer = GA3_1(question)
     if task_id == 'GA3.2':
         answer = GA3_2(question)
+    if task_id == 'GA3.3':
+        answer = GA3_3(question)
+    if task_id == 'GA3.4':
+        answer = await GA3_4(question, file_path)
+    if task_id == 'GA3.5':
+        answer = GA3_5(question)
+    if task_id == 'GA3.6':
+        answer = GA3_6(question)
+    # if task_id == 'GA3.7': extract from excel
+    # if task_id == 'GA3.8': extract from excel
+    # if task_id == 'GA3.9': extract from excel
     if task_id == 'GA5.1':
         answer = GA5_1(question, file_path)
     if task_id == 'GA5.2':
