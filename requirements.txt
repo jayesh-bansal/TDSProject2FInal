@@ -64,3 +64,4 @@ fuzzywuzzy
 python-Levenshtein
 pycountry
 jellyfish
+aiofiles
