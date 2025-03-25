@@ -19,6 +19,7 @@ import pytz
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup  # type: ignore
 from fastapi import UploadFile  # type: ignore
+import aiofiles
 
 def extract_zip_file(source: str, extract_folder: str) -> str:
     """Extracts a ZIP file from a URL or local path."""
@@ -420,48 +421,7 @@ async def GA1_15(question: str, zip_file: UploadFile):
 # Download and extract it. Use mv to move all files under folders into an empty folder. Then rename all files replacing each digit with the next. 1 becomes 2, 9 becomes 0, a1b9c.txt becomes a2b0c.txt.
 # What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?
 
-async def GA1_16_old(zip_file: UploadFile):
-    # Create a temporary directory
-    temp_dir = tempfile.mkdtemp()
-    renamed_dir = tempfile.mkdtemp()
-
-    # Read ZIP file in-memory
-    zip_bytes = await zip_file.read()
-
-    # Extract ZIP contents to temp_dir
-    with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zip_ref:
-        zip_ref.extractall(temp_dir)
-
-    # Function to rename files by incrementing digits
-    def rename_file(file_name):
-        return ''.join([str((int(ch) + 1) % 10) if ch.isdigit() else ch for ch in file_name])
-
-    # Move and rename files
-    for filename in os.listdir(temp_dir):
-        old_path = os.path.join(temp_dir, filename)
-        # if not os.path.isfile(old_path):
-        #     continue  # Skip directories
-        new_filename = rename_file(filename)
-        new_path = os.path.join(renamed_dir, new_filename)
-        shutil.move(old_path, new_path)
-
-    os.chdir(renamed_dir)
-    # Concatenate file contents and compute SHA-256 hash
-    sha256_hash = hashlib.sha256()
-    # for filename in sorted(os.listdir(renamed_dir)):  # Sort for consistency
-    #     file_path = os.path.join(renamed_dir, filename)
-    #     with open(file_path, "rb") as f:
-    #         while chunk := f.read(4096):
-    #             sha256_hash.update(chunk)
-
-    # Cleanup temporary directories
-    shutil.rmtree(temp_dir)
-    shutil.rmtree(renamed_dir)
-
-    return sha256_hash.hexdigest()
-
-
-async def GA1_16(zip_file: UploadFile):
+async def GA1_16_LINX(zip_file: UploadFile):
     extract_folder = "extracted"
     merged_folder = "merged_folder"
 
@@ -501,6 +461,76 @@ async def GA1_16(zip_file: UploadFile):
     # Return checksum result
     return result.stdout.strip()
 
+async def GA1_16(zip_file: UploadFile):
+    # Use "/tmp/" for Vercel, or local paths when running locally
+    BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
+    if BASE_DIR == ".":
+        return await GA1_16_LINX(zip_file)
+    else:
+        return await GA1_16_Vercel(BASE_DIR,zip_file)
+    
+async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
+    extract_folder = os.path.join(BASE_DIR, "extracted")
+    merged_folder = os.path.join(BASE_DIR, "merged_folder")
+
+    # Ensure clean directories
+    shutil.rmtree(extract_folder, ignore_errors=True)
+    shutil.rmtree(merged_folder, ignore_errors=True)
+    os.makedirs(extract_folder, exist_ok=True)
+    os.makedirs(merged_folder, exist_ok=True)
+
+    # Save uploaded file temporarily
+    with NamedTemporaryFile(delete=False, dir=BASE_DIR) as temp_zip:
+        temp_zip_path = temp_zip.name
+
+    async with aiofiles.open(temp_zip_path, 'wb') as temp_zip_writer:
+        while chunk := await zip_file.read(1024):  # Read in chunks
+            await temp_zip_writer.write(chunk)
+
+    # Extract ZIP file
+    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_folder)
+
+    # Move all files from subdirectories into merged_folder
+    for root, _, files in os.walk(extract_folder):
+        for file in files:
+            src_path = os.path.join(root, file)
+            dest_path = os.path.join(merged_folder, file)
+            shutil.move(src_path, dest_path)
+
+    # Rename files (Shift digits: 1 → 2, 9 → 0)
+    for file in os.listdir(merged_folder):
+        newname = file.translate(str.maketrans("0123456789", "1234567890"))
+        if file != newname:
+            shutil.move(os.path.join(merged_folder, file),
+                        os.path.join(merged_folder, newname))
+
+    # Change working directory to merged_folder for hashing
+    os.chdir(merged_folder)
+
+    # Simulate `grep . * | LC_ALL=C sort | sha256sum`
+    sorted_lines = []
+    for file in sorted(os.listdir()):  # Sort files for consistent hashing
+        async with aiofiles.open(file, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = await f.readlines()
+            # Mimic `grep . *`
+            sorted_lines.extend([f"{file}:{line}" for line in lines])
+
+    sorted_lines.sort()  # Simulate `LC_ALL=C sort`
+
+    # Compute SHA-256 on sorted output
+    hash_obj = hashlib.sha256()
+    for line in sorted_lines:
+        hash_obj.update(line.encode("utf-8"))
+
+    checksum_result = hash_obj.hexdigest()
+
+    # Cleanup temp files
+    os.remove(temp_zip_path)
+
+    # Return checksum result
+    return checksum_result
+    
 # Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
 # How many lines are different between a.txt and b.txt?
 
@@ -510,7 +540,6 @@ async def GA1_17(question: str, zip_file: UploadFile) -> int:
         extracted = {f: z.read(f).decode(errors="ignore").splitlines()
                      for f in files if f in z.namelist()}
     return sum(l1.strip() != l2.strip() for l1, l2 in zip(*extracted.values())) if len(extracted) == 2 else -1
-
 
 # There is a tickets table in a SQLite database that has columns type, units, and price. Each row is a customer bid for a concert ticket.
 
