@@ -1,4 +1,3 @@
-
 from tempfile import NamedTemporaryFile
 import os
 import io
@@ -60,7 +59,7 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 # Send a HTTPS request to https: // httpbin.org/get with the URL encoded parameter email set to 22f2001640@ds.study.iitm.ac. in
 # What is the JSON output of the command? (Paste only the JSON body, not the headers)
 
-def GA1_2(question):
+def GA1_2_old(question):
     pattern = r"Send a HTTPS request to (https?://[^\s]+) with the URL encoded parameter email set to ([\w.%+-]+@[\w.-]+\.\w+)"
     match = re.search(pattern, question)
 
@@ -80,6 +79,21 @@ def GA1_2(question):
     return {"error": "Url and Email not found in the input text"}
 
 
+def GA1_2(question):
+    pattern = r"Send a HTTPS request to (https?://[^\s]+) with the URL encoded parameter email set to ([\w.%+-]+@[\w.-]+\.\w+)"
+    match = re.search(pattern, question)
+
+    if match:
+        url, email = match.groups()
+        print("URL:", url)
+        print("Email:", email)
+
+        # Make a GET request with email as a query parameter
+        response = requests.get(url, params={"email": email})
+
+        return response.json()  # Return JSON response from API
+
+    return {"error": "Url and Email not found in the input text"}
 # Let's make sure you know how to use npx and prettier.
 # Download . In the directory where you downloaded it, make sure it is called README.md, and run npx - y prettier@3.4.2 README.md | sha256sum.
 # What is the output of the command?
