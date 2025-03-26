@@ -6,6 +6,10 @@ import openpyxl  # type: ignore
 from processing import fetch_answer
 import re
 import stat
+import json
+import base64
+from io import BytesIO
+from PIL import Image
 
 app = FastAPI()
 
@@ -63,14 +67,12 @@ def save_file(file: UploadFile):
         return f"Error saving file: {str(e)}"
     return file_path
 
-
 def get_file_path(question: str) -> str:
     """Extracts a single filename from the question and returns its full path in the /uploads directory."""
     match = re.search(r'([^\/\\\s]+?\.[a-zA-Z0-9]+)', question)
     file = match.group(1) if match else None
     file_path = os.path.join(os.getcwd(), "uploads", file) if file else None
     return file_path if file_path and os.path.exists(file_path) else None
-
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
@@ -81,10 +83,21 @@ async def serve_form():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
+
 async def read_answer(task_id: str, question: str):
     print("reading from json")
     answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
     return answer
+
+def to_string(value):
+    """Converts any type of value to a string representation."""
+    if value is None:
+        return "None"
+    try:
+        # Converts lists, dicts, and serializable objects
+        return json.dumps(value)
+    except (TypeError, ValueError):
+        return str(value)  # Fallback for other types
 
 @app.post("/api/")
 async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
@@ -95,19 +108,19 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     task_id = classify_task(question)
 
     if task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
-            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+        answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA1.6', 'GA1.11']:
-        func_answer=""
+        func_answer = ""
         if file:
             func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        answer = func_answer or await read_answer(task_id=task_id,question=question)
-    elif task_id in ['GA1.3', 'GA1.8', 'GA1.10', 'GA1.12','GA1.14','GA1.15', 'GA1.16', 'GA1.17']:
+        answer = func_answer or await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA1.3', 'GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ['GA2.2','GA2.4']:
+    elif task_id in ['GA2.2', 'GA2.4']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
@@ -125,38 +138,45 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
         else:
             answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ["GA3.1", "GA3.2", "GA3.3","GA3.5","GA3.6"]:
+    elif task_id in ["GA3.1", "GA3.2", "GA3.3", "GA3.5", "GA3.6"]:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ["GA3.4"]:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
-    elif task_id in ['GA5.1','GA5.2','GA5.3','GA5.4','GA5.5','GA5.6','GA5.7']:
+    elif task_id in ['GA5.1', 'GA5.2', 'GA5.3', 'GA5.4', 'GA5.5', 'GA5.6', 'GA5.7']:
         if file:
-            file_path = save_file(file)
+            print(file)
+            file_path=file
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        else:
-            answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA5.8']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.10']:
         if file:
-            file_path = save_file(file)
+            print(file)
+            file_path = file
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-            return {"answer": answer}
+            # img_data = base64.b64decode(answer)
+            # img = Image.open(BytesIO(img_data))
+            # img.show()
+            # with open("reconstructed_image.png", "wb") as f:
+            #     f.write(img_data)
     else:
         if file:
             file_path = save_file(file)
         answer = await read_answer(task_id=task_id, question=question)
+        response = {"answer": answer}
+        print(response)
+        return response
 
-    if isinstance(answer, int):
-        answer = str(answer)
-    if isinstance(answer, float):
-        answer = str(answer)
-    if isinstance(answer, list):
-        answer = str(answer)
-    
-    output = {"question": question,"task": task_id,"answer": answer,"file received": file.filename if file else "No file uploaded", }
+    actual_answer = answer
+    answer=to_string(answer)
+    output = {"question": question, "task": task_id, "answer": answer,
+              "file received": file.filename if file else "No file uploaded", }
     print(output)
     print()
-    return {"answer": answer}
+    response = {"answer": answer}
+    print(response)
+    print()
+    print(json.loads(answer))
+    return response

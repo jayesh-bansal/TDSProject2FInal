@@ -205,7 +205,7 @@ def GA3_5(question: str):
             "model": "text-embedding-3-small",
             "input": extracted_messages
         }
-        return result  # Convert the dictionary to a string and return the     result
+        return result 
     else:
         return {"error": "Invalid format"}
 

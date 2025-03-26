@@ -80,22 +80,22 @@ async def fetch_answer(task_id, question, file_path):
     # if task_id == 'GA3.8': extract from excel
     # if task_id == 'GA3.9': extract from excel
     if task_id == 'GA5.1':
-        answer = GA5_1(question, file_path)
+        answer = await GA5_1(question, file_path)
     if task_id == 'GA5.2':
-        answer = GA5_2(question, file_path)
+        answer = await GA5_2(question, file_path)
     if task_id == 'GA5.3':
-        answer = GA5_3(question, file_path)
+        answer = await GA5_3(question, file_path)
     if task_id == 'GA5.4':
-        answer = GA5_4(question, file_path)
+        answer = await GA5_4(question, file_path)
     if task_id == 'GA5.5':
-        answer = GA5_5(question, file_path)
+        answer = await GA5_5(question, file_path)
     if task_id == 'GA5.6':
-        answer = GA5_6(question, file_path)
+        answer = await GA5_6(question, file_path)
     if task_id == 'GA5.7':
-        answer = GA5_7(question, file_path)
+        answer = await GA5_7(question, file_path)
     if task_id == 'GA5.8':
         answer = GA5_8(question)
     # if task_id == 'GA5.9': extract from excel
     if task_id == 'GA5.10':
-        answer = GA5_10(question, file_path)
+        answer = await GA5_10(question, file_path)
     return answer

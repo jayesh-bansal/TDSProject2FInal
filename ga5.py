@@ -11,6 +11,9 @@ import json
 import os
 from PIL import Image, ImageDraw
 import base64
+from io import BytesIO
+from fastapi import UploadFile  # type: ignore
+import io
 
 
 def get_country_code(country_name: str) -> str:
@@ -47,7 +50,9 @@ COUNTRY_MAPPING = {
 }
 
 
-def GA5_1(question, file_path):
+async def GA5_1(question, file:UploadFile):
+    file_content = await file.read()
+    file_path = BytesIO(file_content)
     match = re.search(
         r'What is the total margin for transactions before ([A-Za-z]{3} [A-Za-z]{3} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[+\-]\d{4}) \(India Standard Time\) for ([A-Za-z]+) sold in ([A-Za-z]+)', question, re.IGNORECASE)
     filter_date = datetime.strptime(match.group(
@@ -88,82 +93,100 @@ def GA5_1(question, file_path):
     print(total_margin, total_cost, total_sales)
     return total_margin
 
-# Example usage
-# file_path = "sales_data.xlsx"
-# margin = GA5_1("What is the total margin for transactions before Sun Dec 10 2023 09:38:05 GMT+0530 (India Standard Time) for Epsilon sold in IN (which may be spelt in different ways)?", file_path)
-# print("Total Margin:", margin)
-
-
-def GA5_2(question, file_path):
+async def GA5_2(question: str, file: UploadFile):
+    """Extracts unique names and IDs from an uploaded text file."""
+    file_content = await file.read()
+    file_path = BytesIO(file_content)  # In-memory file-like object
     names, ids = set(), set()
-    id_pattern = re.compile(r'[^A-Za-z0-9]+')
-    with open(file_path, "r", encoding="utf-8") as file:
-        for line in file:
-            if not (line := line.strip()):
-                continue
-            parts = line.rsplit('-', 1)
-            if len(parts) > 1:
-                names.add(parts[0].strip())
-                ids.add(id_pattern.sub("", parts[1].split('Marks')[0]).strip())
-    print(len(names), len(ids))
+    id_pattern = re.compile(r'[^A-Za-z0-9]+')  # Pattern to clean ID values
+    # Read file line by line
+    for line in file_path.read().decode("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue  # Skip empty lines
+        parts = line.rsplit('-', 1)  # Split only at the last '-'
+        if len(parts) == 2:
+            name = parts[0].strip()
+            id_part = parts[1].strip()
+            # Extract ID before 'Marks' if present, otherwise use entire id_part
+            id_cleaned = id_pattern.sub("", id_part.split(
+                'Marks')[0] if 'Marks' in id_part else id_part).strip()
+            names.add(name)
+            ids.add(id_cleaned)
+    print(f"Unique Names: {len(names)}, Unique IDs: {len(ids)}")
     return len(ids)
 
-# Example usage
-# file_path = "student_data.txt"
-# num_unique_students = GA5_2("How many unique students are there in the file?"file_path)
-# print("Number of unique students:", num_unique_students)
 
+async def GA5_3(question: str, file: UploadFile):
+    """Count successful requests for a given request type and page section within a time range."""
 
-def GA5_3(question, file_path):
+    file_content = await file.read()
+    file_path = BytesIO(file_content)  # In-memory file-like object
+
+    # Extract parameters from the question using regex
     match = re.search(
-        r'What is the number of successful (\w+) requests for pages under (/[a-zA-Z0-9_/]+) from (\d+):00 until before (\d+):00 on (\w+)days?', question, re.IGNORECASE)
+        r'What is the number of successful (\w+) requests for pages under (/[a-zA-Z0-9_/]+) from (\d+):00 until before (\d+):00 on (\w+)days?',
+        question, re.IGNORECASE)
+
+    if not match:
+        return {"error": "Invalid question format"}
 
     request_type, target_section, start_hour, end_hour, target_weekday = match.groups()
-    target_weekday = target_weekday.capitalize()+"day"
+    target_weekday = target_weekday.capitalize() + "day"
+
+    # Extract status code range from the question
     success_match = re.search(
         r'status codes between (\d+) and (\d+)', question, re.IGNORECASE)
+    status_min = int(success_match.group(1))
+    status_max = int(success_match.group(2))
 
-    status_min = int(success_match.group(1)) if success_match else 200
-    status_max = int(success_match.group(2)) if success_match else 299
-    print(start_hour, end_hour, request_type, status_min,
-          status_max, target_section, target_weekday)
+    print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Status: {status_min}-{status_max}, Section: {target_section}, Day: {target_weekday}")
+
     successful_requests = 0
 
-    with gzip.open(file_path, 'rt', encoding='utf-8') as file:
-        line_count = 0
-        for line in file:
-            line_count += 1
-            parts = line.split()
+    try:
+        with gzip.GzipFile(fileobj=file_path, mode="r") as gz_file:
+            file_content = gz_file.read().decode("utf-8")
+            file = file_content.splitlines()
+            for line in file:
+                parts = line.split()
 
-            if len(parts) < 9:
-                print("Malformed line:", line)
-                continue  # Skip malformed lines
+                # Ensure the log line has the minimum required fields
+                if len(parts) < 9:
+                    print(f"Skipping malformed line: {line.strip()}")
+                    continue
 
-            time_part = parts[3].strip('[]')
-            request_method, url, _ = parts[5:8]
-            request_method = request_method.replace('"', '').upper()
-            status_code = int(parts[8])
-            log_time = datetime.strptime(time_part, "%d/%b/%Y:%H:%M:%S")
-            log_time = log_time.astimezone()  # Convert timezone if needed
-            request_weekday = log_time.strftime('%A')
+                time_part = parts[3].strip('[]')  # Extract timestamp
+                request_method = parts[5].replace('"', '').upper()
+                url = parts[6]
+                status_code = int(parts[8])
 
-            status_min, status_max = int(status_min), int(status_max)
-            start_hour, end_hour = int(start_hour), int(end_hour)
-            if (status_min <= status_code <= status_max and request_method == request_type
-               and url.startswith(target_section)
-               and start_hour <= log_time.hour < end_hour and request_weekday == target_weekday
-                ):
-                successful_requests += 1
+                try:
+                    log_time = datetime.strptime(
+                        time_part, "%d/%b/%Y:%H:%M:%S")
+                    log_time = log_time.astimezone()  # Ensure correct timezone
+                except ValueError:
+                    print(f"Skipping invalid date format: {time_part}")
+                    continue
+
+                request_weekday = log_time.strftime('%A')
+
+                # Apply filters
+                if (status_min <= status_code <= status_max and
+                    request_method == request_type and
+                    url.startswith(target_section) and
+                    int(start_hour) <= log_time.hour < int(end_hour) and
+                        request_weekday == target_weekday):
+                    successful_requests += 1
+
+    except Exception as e:
+        return {"error": str(e)}
 
     return successful_requests
 
-# Example usage
-# file_path = "log_data.gz"
-# num_successful_requests = GA5_3("What is the number of successful GET requests for pages under /hindi/ from 3:00 until before 8:00 on Wednesdays?", file_path)
-# print("Number of successful requests:", num_successful_requests)
-
-
-def GA5_4(question, file_path):
+async def GA5_4(question: str, file: UploadFile):
+    file_content = await file.read()
+    file_path = BytesIO(file_content)  # In-memory file-like object
     date_match = re.search(r'(\d{4}-\d{2}-\d{2})', question)
     target_date = datetime.strptime(date_match.group(
         1), "%Y-%m-%d").date() if date_match else None
@@ -172,14 +195,16 @@ def GA5_4(question, file_path):
         r'Across all requests under ([a-zA-Z0-9]+)/ on', question)
     language_pattern = str("/"+log_pattern.group(1)+"/")
     print(language_pattern, target_date)
-    with gzip.open(file_path, 'rt', encoding='utf-8') as file:
-        line_count = 0
+    with gzip.GzipFile(fileobj=file_path, mode="r") as gz_file:
+        file_content = gz_file.read().decode("utf-8")
+        file = file_content.splitlines()
         for line in file:
-            line_count += 1
             parts = line.split()
             ip_address = parts[0]
             time_part = parts[3].strip('[]')
-            request_method, url, _ = parts[5:8]
+            request_method = parts[5].replace('"', '').upper()
+            url = parts[6]
+            status_code = int(parts[8])
             log_time = datetime.strptime(time_part, "%d/%b/%Y:%H:%M:%S")
             log_time = log_time.astimezone()  # Convert timezone if needed
             size = int(parts[9]) if parts[9].isdigit() else 0
@@ -190,13 +215,6 @@ def GA5_4(question, file_path):
     top_bandwidth = ip_bandwidth[top_ip] if top_ip else 0
     return top_bandwidth
 
-# Example usage
-# file_path = "log_data.gz"
-# top_ip, top_bandwidth = GA5_4("Across all requests under malayalammp3/ on 2024-05-15, how many bytes did the top IP address (by volume of downloads) download?", file_path)
-# print("Top IP address:", top_ip)
-# print("Top bandwidth:", top_bandwidth)
-
-
 def get_best_matches(target, choices, threshold=0.85):
     """Find all matches for target in choices with Jaro-Winkler similarity >= threshold."""
     target = target.lower()
@@ -205,8 +223,14 @@ def get_best_matches(target, choices, threshold=0.85):
     return matches
 
 
-def GA5_5(question, file_path):
-    df = pd.read_json(file_path)
+async def GA5_5(question: str, file: UploadFile):
+    file_content = await file.read()
+    file_path = BytesIO(file_content)  # In-memory file-like object
+    try:
+        df = pd.read_json(file_path)  # Load JSON into a Pandas DataFrame
+    except ValueError:
+        raise ValueError(
+            "Invalid JSON format. Ensure the file contains a valid JSON structure.")
 
     match = re.search(
         r'How many units of ([A-Za-z\s]+) were sold in ([A-Za-z\s]+) on transactions with at least (\d+) units\?',
@@ -260,54 +284,30 @@ def fix_sales_value(sales):
 
     return 0.0  # Default for invalid values
 
-
-def load_and_fix_sales_data(file_path):
-    """Load JSON Lines (jsonl) sales data, fix invalid entries, and return cleaned data."""
-    cleaned_data = []
-
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for idx, line in enumerate(file, start=1):
-                try:
-                    entry = json.loads(line.strip())  # Parse each JSON line
-
-                    # Ensure 'sales' field exists, fix if needed
-                    if "sales" in entry:
-                        entry["sales"] = fix_sales_value(
-                            entry["sales"])  # Fix invalid sales
-                        cleaned_data.append(entry)
-                    else:
-                        print(
-                            f"Line {idx}: Missing 'sales' field, adding default 0.0")
-                        entry["sales"] = 0.0
-                        cleaned_data.append(entry)
-
-                except json.JSONDecodeError:
-                    # print(
-                    #     f"Line {idx}: Corrupt JSON, skipping -> {line.strip()}")
-                    line = line.strip().replace("{", "").split(",")[:-1]
-                    line = json.dumps({k.strip('"'): int(v) if v.isdigit() else v.strip(
-                        '"') for k, v in (item.split(":", 1) for item in line)})
-                    # print("Fixed",line)
-                    cleaned_data.append(json.loads(line.strip()))
-
-    except FileNotFoundError:
-        print(f"Error: File not found - {file_path}")
-        return []
-
-    return cleaned_data
-
-
-def GA5_6(question, file_path):
-    sales_data = load_and_fix_sales_data(file_path)
+async def GA5_6(question: str, file: UploadFile):
+    file_content = await file.read()
+    lines = file_content.decode(
+        "utf-8").splitlines()  # In-memory file-like object
+    sales_data = []
+    for idx, line in enumerate(lines, start=1):
+        try:
+            entry = json.loads(line.strip())  # Parse each JSON line
+            if "sales" in entry:
+                entry["sales"] = fix_sales_value(entry["sales"])  # Fix invalid sales
+                sales_data.append(entry)
+            else:
+                print(f"Line {idx}: Missing 'sales' field, adding default 0.0")
+                entry["sales"] = 0.0
+                sales_data.append(entry)
+        except json.JSONDecodeError:
+            # print(
+            #     f"Line {idx}: Corrupt JSON, skipping -> {line.strip()}")
+            line = line.strip().replace("{", "").split(",")[:-1]
+            line = json.dumps({k.strip('"'): int(v) if v.isdigit() else v.strip('"') for k, v in (item.split(":", 1) for item in line)})
+            # print("Fixed",line)
+            sales_data.append(json.loads(line.strip()))
     sales = int(sum(entry["sales"] for entry in sales_data))
     return sales
-
-# Example usage
-# file_path = "sales_data.jsonl"
-# total_sales = GA5_6("Download the data from q-parse-partial-json.jsonl. What is the total sales value?", file_path)
-# print("Total sales:", total_sales)
-
 
 def count_keys_json(data, key_word):
     count = 0
@@ -322,12 +322,12 @@ def count_keys_json(data, key_word):
     return count
 
 
-def GA5_7(question, file_path):
+async def GA5_7(question: str, file: UploadFile):
+    file_content = await file.read()
+    file_content = file_content.decode("utf-8")
     key = re.search(r'How many times does (\w+) appear as a key?', question).group(1)
     print(key)
-    with open(file_path, "r", encoding="utf-8") as file:
-        json_data = json.load(file)
-
+    json_data = json.loads(file_content)
     count = count_keys_json(json_data, key)
     return count
 
@@ -356,33 +356,18 @@ ORDER BY post_id ASC
 # print("Key count:", key_count)
 
 
-def GA5_10(mapping_text, file_path):
-    """
-    Reconstructs an image from scrambled pieces using a given mapping.
-    
-    Args:
-        mapping_text (str): The mapping information as a string.
-        file_path (str): The path to the scrambled image file.
-    
-    Returns:
-        str: Base64-encoded string of the reconstructed image.
-    """
-
-    # Check if file exists
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    # Load the scrambled image
-    scrambled_image = Image.open(file_path)
+async def GA5_10(question: str, file: UploadFile):
+    # Read file content into memory
+    file_bytes = await file.read()
+    scrambled_image = Image.open(io.BytesIO(file_bytes))
 
     # Image parameters
     grid_size = 5  # 5x5 grid
-    piece_size = scrambled_image.width // grid_size  # Assuming square image
+    piece_size = scrambled_image.width // grid_size  # Assuming a square image
 
     # Regex pattern to extract mapping data
     pattern = re.compile(r"(\d+)\s+(\d+)\s+(\d+)\s+(\d+)")
-    mapping = [tuple(map(int, match))
-               for match in pattern.findall(mapping_text)]
+    mapping = [tuple(map(int, match)) for match in pattern.findall(question)]
 
     # Create a blank image for reconstruction
     reconstructed_image = Image.new(
@@ -390,31 +375,22 @@ def GA5_10(mapping_text, file_path):
 
     # Rearrange pieces based on the mapping
     for original_row, original_col, scrambled_row, scrambled_col in mapping:
-        # Extract piece from scrambled image
         scrambled_x = scrambled_col * piece_size
         scrambled_y = scrambled_row * piece_size
+
+        # Extract piece from scrambled image
         piece = scrambled_image.crop(
-            (scrambled_x, scrambled_y, scrambled_x + piece_size, scrambled_y + piece_size))
+            (scrambled_x, scrambled_y, scrambled_x +
+             piece_size, scrambled_y + piece_size)
+        )
 
         # Place in correct position in the reconstructed image
         original_x = original_col * piece_size
         original_y = original_row * piece_size
         reconstructed_image.paste(piece, (original_x, original_y))
 
-    # Save the reconstructed image
-    output_filename = "ga5_q10_reconstructed_image.png"
-    reconstructed_image.save(output_filename)
-
-    # Show the reconstructed image
-    reconstructed_image.show()
-
-    # Get absolute path
-    new_image_path = os.path.abspath(output_filename)
-    print(f"Reconstructed image saved at: {new_image_path}")
-
     # Convert to Base64
-    with open(new_image_path, 'rb') as f:
-        binary_data = f.read()
-        image_b64 = base64.b64encode(binary_data).decode()
-
+    img_io = io.BytesIO()
+    reconstructed_image.save(img_io, format="PNG")
+    image_b64 = base64.b64encode(img_io.getvalue()).decode()
     return image_b64
