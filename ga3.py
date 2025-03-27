@@ -71,8 +71,9 @@ def GA3_2(question: str):
         "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": user_message}]
     }
-    API_KEY = os.getenv("AIPROXY_TOKEN")  # Set this variable in your system
-    print(API_KEY)
+    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
+    # API_KEY = os.getenv("AIPROXY_TOKEN")  # Set this variable in your system
+    # print(API_KEY)
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {API_KEY}"

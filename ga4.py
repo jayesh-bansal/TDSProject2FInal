@@ -1,4 +1,6 @@
-import pycountry
+import fitz
+import xml.etree.ElementTree as ET
+import pycountry  # type: ignore
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
@@ -7,15 +9,23 @@ import json
 from urllib.parse import urlencode
 from datetime import datetime, timedelta
 import pytz
-from geopy.geocoders import Nominatim
+from geopy.geocoders import Nominatim  # type: ignore
+import io
+from fastapi import UploadFile  # type: ignore
+import pymupdf4llm
+import tabula
+
 
 def GA4_1(question: str):
     match = re.search(
         r'What is the total number of ducks across players on page number (\d+)', question)
     page_number = match.group(1)
-    url = "https://stats.espncricinfo.com/stats/engine/stats/index.html?class=2;page=" + page_number + ";template=results;type=batting"
+    url = "https://stats.espncricinfo.com/stats/engine/stats/index.html?class=2;page=" + \
+        page_number + ";template=results;type=batting"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise f'Failed to fetch the page. Status code: {response.status_code}'
     soup = BeautifulSoup(response.text, "html.parser")
     tables = soup.find_all("table", {"class": "engineTable"})
     stats_table = None
@@ -27,11 +37,11 @@ def GA4_1(question: str):
         print("Could not find the batting stats table on the page.")
     headers = [th.get_text(strip=True)for th in stats_table.find_all("th")]
     # print(headers)
-    rows=stats_table.find_all("tr",{"class":"data1"})
+    rows = stats_table.find_all("tr", {"class": "data1"})
     sum_ducks = 0
     for row in rows:
-        cells=row.find_all("td")
-        if len(cells)>12:
+        cells = row.find_all("td")
+        if len(cells) > 12:
             duck_count = cells[12].get_text(strip=True)
             if duck_count.isdigit():  # Check if it's a number
                 sum_ducks += int(duck_count)
@@ -40,6 +50,15 @@ def GA4_1(question: str):
 
 # question = "What is the total number of ducks across players on page number 6"
 # print(GA4_1(question))
+
+
+def change_movie_title(title):
+    if "Kraven: The Hunter" in title:
+        return title.replace("Kraven: The Hunter", "Kraven the Hunter")
+    elif "Captain America: New World Order" in title:
+        return title.replace("Captain America: New World Order", "Captain America: Brave New World")
+    else:
+        return title
 
 
 def GA4_2(question):
@@ -57,7 +76,7 @@ def GA4_2(question):
     soup = BeautifulSoup(response.text, "html.parser")
     movies = []
     movie_items = soup.select(".ipc-metadata-list-summary-item")
-    items=movie_items[:25]
+    items = movie_items[:25]
     for item in items:
         link = item.select_one(".ipc-title-link-wrapper")
         movie_id = re.search(
@@ -66,9 +85,10 @@ def GA4_2(question):
         # Extract title
         title_elem = item.select_one(".ipc-title__text")
         title = title_elem.text.strip() if title_elem else None
+        title = change_movie_title(title)
 
         year_elem = item.select_one(".dli-title-metadata-item")
-        year = year_elem.text.strip() if year_elem else None
+        year = year_elem.text if year_elem else None
 
         rating_elem = item.select_one(".ipc-rating-star--rating")
         rating = rating_elem.text.strip() if rating_elem else None
@@ -102,25 +122,31 @@ def GA4_2(question):
 # print(GA4_2(question))
 
 def GA4_4(question):
-    match = re.search(r"What is the JSON weather forecast description for (\w+)?", question)
+    match = re.search(
+        r"What is the JSON weather forecast description for (\w+)?", question)
     required_city = match.group(1)
     print(required_city)
     # required_city = "Karachi"
     location_url = 'https://locator-service.api.bbci.co.uk/locations?' + urlencode({
-    'api_key': 'AGbFAKx58hyjQScCXIYrxuEwJh2W2cmv',
-    's': required_city,
-    'stack': 'aws',
-    'locale': 'en',
-    'filter': 'international',
-    'place-types': 'settlement,airport,district',
-    'order': 'importance',
-    'a': 'true',
-    'format': 'json'
+        'api_key': 'AGbFAKx58hyjQScCXIYrxuEwJh2W2cmv',
+        's': required_city,
+        'stack': 'aws',
+        'locale': 'en',
+        'filter': 'international',
+        'place-types': 'settlement,airport,district',
+        'order': 'importance',
+        'a': 'true',
+        'format': 'json'
     })
     result = requests.get(location_url).json()
-    url= 'https://www.bbc.com/weather/'+result['response']['results']['results'][0]['id']
-    time_zone=result['response']['results']['results'][0]['timezone']
+    if not result['response']['results']['results']:
+        return "No location found"
+    url = 'https://www.bbc.com/weather/' + \
+        result['response']['results']['results'][0]['id']
+    time_zone = result['response']['results']['results'][0]['timezone']
     response = requests.get(url)
+    if response.status_code != 200:
+        return json.dumps({"error": "Failed to fetch data from BBC"}, indent=2)
     soup = BeautifulSoup(response.content, 'html.parser')
     daily_summary = soup.find('div', attrs={'class': 'wr-day-summary'})
     daily_summary_list = re.findall('[a-zA-Z][^A-Z]*', daily_summary.text)
@@ -129,13 +155,15 @@ def GA4_4(question):
     daily_low_values = soup.find_all(
         'span', attrs={'class': 'wr-day-temperature__low-value'})
     # local_time = datetime.today()
-    local_time = datetime.now(pytz.timezone(time_zone))-timedelta(days=1)
-    datelist = pd.date_range(local_time, periods=len(daily_high_values)+1).tolist()
-    datelist = [datelist[i].date().strftime('%Y-%m-%d')
-                for i in range(len(datelist))]
-    zipped_1 = zip(datelist, daily_summary_list)
-    df_1 = pd.DataFrame(list(zipped_1), columns=['Date', 'Summary'])
-    json_data = df_1.set_index('Date')['Summary'].to_json()
+    local_time = datetime.now(pytz.timezone(time_zone))
+    print(local_time.date().strftime('%Y-%m-%d'))
+    date_list = pd.date_range(
+        local_time, periods=len(daily_high_values)).tolist()
+    date_list = [date_list[i].date().strftime('%Y-%m-%d')
+                 for i in range(len(date_list))]
+    zipped = zip(date_list, daily_summary_list)
+    df = pd.DataFrame(list(zipped), columns=['Date', 'Summary'])
+    json_data = df.set_index('Date')['Summary'].to_json()
     # print(json_data)
     return json_data
 
@@ -151,6 +179,7 @@ def get_country_code(country_name):
     except LookupError:
         return None  # Returns None if the country name is not found
 
+
 def GA4_5(question):
     match1 = re.search(
         r"What is the minimum latitude of the bounding box of the city ([A-Za-z\s]+) in", question)
@@ -163,11 +192,115 @@ def GA4_5(question):
     locator = Nominatim(user_agent="myGeocoder")
     country_code = get_country_code(country)
     location = locator.geocode(city, country_codes=country_code)
-    # print(location.raw, location.point, location.longitude, location.latitude, location.altitude, location.address) 
-    result=location.raw["boundingbox"][0]
+    # print(location.raw, location.point, location.longitude, location.latitude, location.altitude, location.address)
+    result = location.raw["boundingbox"][0]
     # print(result)
     return result
 
 
 # q = "What is the minimum latitude of the bounding box of the city Ho Chi Minh City in the country Vietnam on the Nominatim API? Value of the minimum latitude"
 # print(GA4_5(q))
+
+
+def GA4_6(question):
+    pattern = r"What is the link to the latest Hacker News post mentioning (.+?) having at least (\d+) points?"
+    match = re.search(pattern, question)
+    keyword, min_points = match.group(1), int(match.group(2))
+    print(keyword, min_points)
+    url = "https://hnrss.org/newest"
+    request = requests.get(url, params={"q": keyword, "points": min_points})
+    rss_content = request.text
+    root = ET.fromstring(rss_content)
+    items = root.findall(".//item")
+    if not items:
+        return "No matching post found."
+    latest_post = items[0]
+    title = latest_post.find("title").text
+    link = latest_post.find("link").text
+    published = latest_post.find("pubDate").text
+    return link
+
+
+# q = "What is the link to the latest Hacker News post mentioning Self-Hosting having at least 98 points?"
+# print(GA4_6(q))
+
+def GA4_7(question):
+    """Using the GitHub API, find all users located in the city with over a specified number of followers"""
+    pattern = r"find all users located in the city (.+?) with over (\d+) followers"
+    match = re.search(pattern, question)
+    if not match:
+        return "Invalid question format"
+    city, min_followers = match.group(1), int(match.group(2))
+    url = "https://api.github.com/search/users"
+    params = {"q": f"location:{city} followers:>{min_followers}",
+              "sort": "joined", "order": "desc"}
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        return f"GitHub API request failed with status {response.status_code}"
+    data = response.json()
+    if "items" not in data:
+        return "No users found in the response."
+    latest_user = data["items"][0]
+    # print(latest_user)
+    url = latest_user["url"]
+    # print(url)
+    response = requests.get(url)
+    if response.status_code != 200:
+        return f"GitHub API request failed with status {response.status_code}"
+    created_at = response.json()["created_at"]
+    return created_at
+
+
+# q = "find all users located in the city Hyderabad with over 110 followers."
+# print(GA4_7(q))
+
+async def GA4_9_without_pdfplumber(question: str):
+    match = re.search(
+        r"What is the total (.+?) marks of students who scored (\d+) or more marks in (.+?) in groups (\d+)-(\d+) \(including both groups\)\?",
+        question
+    )
+
+    if match is None:
+        return {"error": "Question format is incorrect"}
+
+    final_subject = match.group(1)
+    min_score = int(match.group(2))
+    subject = match.group(3)
+    min_group = int(match.group(4))
+    max_group = int(match.group(5))
+    print("Params:", final_subject, min_score, subject, min_group, max_group)
+    # Read all sheets from the Excel file
+    excel_filename = "pdf_data_excel.xlsx"
+    sheets_dict = pd.read_excel(excel_filename, sheet_name=None)
+    # Combine data from selected pages
+    df_list = []
+    for group_num in range(min_group, max_group+1):
+        sheet_name = f"group_{group_num}"
+        if sheet_name in sheets_dict:
+            df_list.append(sheets_dict[sheet_name])
+    if not df_list:
+        return {"error": "No valid pages found in the specified range"}
+    # Combine all selected pages into a single DataFrame
+    df = pd.concat(df_list, ignore_index=True)
+    # Ensure required columns exist
+    if subject not in df.columns or final_subject not in df.columns:
+        return {"error": "Required columns not found in extracted data"}
+    # Convert columns to numeric, handling errors
+    df[subject] = pd.to_numeric(df[subject], errors="coerce")
+    df[final_subject] = pd.to_numeric(df[final_subject], errors="coerce")
+    # Filter and compute the sum
+    result = df[df[subject] >= min_score][final_subject].sum()
+    return result
+
+# q = "What is the total Maths marks of students who scored 36 or more marks in Economics in groups 36-60 (including both groups)?"
+
+
+async def GA4_10(question: str, file: UploadFile):
+    file_content = await file.read()
+    # Convert bytes to a file-like object
+    pdf_stream = io.BytesIO(file_content)
+    # Open the PDF with PyMuPDF
+    doc = fitz.open(stream=pdf_stream, filetype="pdf")
+    md_text = pymupdf4llm.to_markdown(doc)  # Convert PDF to Markdown
+    print(md_text)
+    return md_text

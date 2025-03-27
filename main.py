@@ -10,6 +10,7 @@ import json
 import base64
 from io import BytesIO
 from PIL import Image
+import httpx  # type: ignore
 
 app = FastAPI()
 
@@ -67,12 +68,14 @@ def save_file(file: UploadFile):
         return f"Error saving file: {str(e)}"
     return file_path
 
+
 def get_file_path(question: str) -> str:
     """Extracts a single filename from the question and returns its full path in the /uploads directory."""
     match = re.search(r'([^\/\\\s]+?\.[a-zA-Z0-9]+)', question)
     file = match.group(1) if match else None
     file_path = os.path.join(os.getcwd(), "uploads", file) if file else None
     return file_path if file_path and os.path.exists(file_path) else None
+
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_form():
@@ -89,15 +92,36 @@ async def read_answer(task_id: str, question: str):
     answer = TASKS_ANSWERS.get(task_id, "No answer found for this task.")
     return answer
 
+
 def to_string(value):
     """Converts any type of value to a string representation."""
     if value is None:
         return "None"
-    try:
-        # Converts lists, dicts, and serializable objects
-        return json.dumps(value)
-    except (TypeError, ValueError):
-        return str(value)  # Fallback for other types
+    if not isinstance(value, str):
+        try:
+            # Converts lists, dicts, and serializable objects
+            return json.dumps(value)
+        except (TypeError, ValueError):
+            return str(value)  # Fallback for other types
+    return value
+
+
+def Solve_Unknown_Task(question):
+    BASE_URL = "https://aiproxy.sanand.workers.dev/openai/v1"
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "user", "content": question+" return only the answer"}]
+    }
+    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+    response = httpx.post(BASE_URL + "/chat/completions",
+                          json=data, headers=headers)
+
+    return response.json().get("choices", [])[0].get("message", {}).get("content")
+
 
 @app.post("/api/")
 async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
@@ -106,20 +130,30 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     #     return {"question": question, "answer": file_path if file_path else "File not found"}
 
     task_id = classify_task(question)
-
-    if task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
+    if task_id == "Unknown":
+        answer = Solve_Unknown_Task(question)
+    elif task_id in ['GA1.1']:
+        answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
-    elif task_id in ['GA1.6', 'GA1.11']:
-        func_answer = ""
-        if file:
-            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        answer = func_answer or await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.3', 'GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA1.6', 'GA1.11']:
+        func_answer = ""
+        if file:
+            print(file)
+            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+        answer = func_answer or await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA1.13']:
+        answer = "https://raw.githubusercontent.com/Telvinvarghese/GA1/main/email.json"
+    elif task_id in ['GA2.1']:
+        answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA2.3']:
+        answer = "https://telvinvarghese.github.io/website/"
     elif task_id in ['GA2.2', 'GA2.4']:
         if file:
             print(file)
@@ -132,27 +166,48 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
-    elif task_id in ['GA2.9']:
-        if file:
-            file_path = save_file(file)
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        else:
-            answer = await read_answer(task_id=task_id, question=question)
+    # elif task_id in ['GA2.6']:
+    elif task_id in ['GA2.7']:
+        answer = "https://github.com/Telvinvarghese/TDS"
+    elif task_id in ['GA2.8']:
+        answer = "https://hub.docker.com/repository/docker/telvinvarghese/py-hello/general"
+    # elif task_id in ['GA2.9']:
+    elif task_id in ['GA2.10']:
+        answer = "https://daeb-2409-4072-6e45-1953-c9d6-9624-b787-cecb.ngrok-free.app/"
     elif task_id in ["GA3.1", "GA3.2", "GA3.3", "GA3.5", "GA3.6"]:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ["GA3.4"]:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
-    elif task_id in ['GA4.1','GA4.2','GA4.4','GA4.5']:
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    # elif task_id in ["GA3.7"]:
+    # elif task_id in ["GA3.8"]:
+    elif task_id in ['GA3.9']:
+        answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA4.1', 'GA4.2', 'GA4.4', 'GA4.5', 'GA4.6', 'GA4.7']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    # elif task_id in ['GA4.3']:
+    elif task_id in ['GA4.8']:
+        answer = "https://github.com/Telvinvarghese/test"
+    elif task_id in ['GA4.9']:
+        if file:
+            print(file)
+            file_path = file
+            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    elif task_id in ['GA4.10']:
+        answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA5.1', 'GA5.2', 'GA5.3', 'GA5.4', 'GA5.5', 'GA5.6', 'GA5.7']:
         if file:
             print(file)
-            file_path=file
+            file_path = file
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA5.8']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+    # elif task_id in ['GA5.9']:
     elif task_id in ['GA5.10']:
         if file:
             print(file)
@@ -174,13 +229,16 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         return response
 
     actual_answer = answer
-    answer=to_string(answer)
+    answer = to_string(answer)
     output = {"question": question, "task": task_id, "answer": answer,
               "file received": file.filename if file else "No file uploaded", }
-    print(output)
+    print("output :", output)
     print()
     response = {"answer": answer}
-    print(response)
+    print("response :", response)
     print()
-    print(json.loads(answer))
+    try:
+        print("json output :", json.loads(answer))
+    except json.JSONDecodeError:
+        pass
     return response
