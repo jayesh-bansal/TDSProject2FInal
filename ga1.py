@@ -108,20 +108,17 @@ EXT_TO_PARSER = {".js": "babel", ".ts": "typescript", ".json": "json", ".css": "
                  ".html": "html", ".md": "markdown", ".yaml": "yaml", ".yml": "yaml"}
 
 async def GA1_3(file: UploadFile):
-    # if os.getenv("VERCEL"):
-    #     return ""
-    # try:
-    #     process = await asyncio.create_subprocess_exec(
-    #         "npx", "-y", "prettier@3.4.2", "--parser", "markdown",
-    #         stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
-    #     )
-    #     formatted_output, _ = await process.communicate(await file.read())
-    #     if not formatted_output : {"error": "Prettier failed"}
-    #     return hashlib.sha256(formatted_output).hexdigest()
+    try:
+        process = await asyncio.create_subprocess_exec(
+            "npx", "-y", "prettier@3.4.2", "--parser", "markdown",
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
+        )
+        formatted_output, _ = await process.communicate(await file.read())
+        if not formatted_output : {"error": "Prettier failed"}
+        return hashlib.sha256(formatted_output).hexdigest()
 
-    # except Exception as e:
-    #     return {"error": str(e)}
-    return os.getenv("VERCEL")
+    except Exception as e:
+        return {"error": str(e)}
     
 # Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets. 
 # (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
