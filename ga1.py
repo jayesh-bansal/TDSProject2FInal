@@ -489,9 +489,9 @@ async def GA1_16(zip_file: UploadFile):
     else:
         return await GA1_16_Vercel("/tmp", zip_file)
 
-async def GA1_16_Vercel(zip_file: UploadFile):
+
+async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
     # Use "/tmp/" for Vercel, or local paths when running locally
-    BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
     extract_folder = os.path.join(BASE_DIR, "extracted")
     merged_folder = os.path.join(BASE_DIR, "merged_folder")
 
