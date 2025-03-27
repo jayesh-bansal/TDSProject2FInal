@@ -66,4 +66,3 @@ pycountry
 jellyfish
 aiofiles
 geopy
-fitz
