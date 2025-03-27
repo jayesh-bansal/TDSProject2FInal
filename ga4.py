@@ -13,7 +13,7 @@ from geopy.geocoders import Nominatim  # type: ignore
 import io
 from fastapi import UploadFile  # type: ignore
 # import pymupdf4llm
-import tabula
+# import tabula
 
 
 def GA4_1(question: str):
