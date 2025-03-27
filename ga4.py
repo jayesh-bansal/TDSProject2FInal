@@ -12,7 +12,7 @@ import pytz
 from geopy.geocoders import Nominatim  # type: ignore
 import io
 from fastapi import UploadFile  # type: ignore
-import pymupdf4llm
+# import pymupdf4llm
 import tabula
 
 
