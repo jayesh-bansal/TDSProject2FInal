@@ -140,8 +140,9 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         func_answer = ""
         if file:
             print(file)
-            if not os.env('VERCEL_ENV'):
-                answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            # print(os.getenv('VERCEL'))
+            if not os.getenv('VERCEL'):
+                answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
             else:
                 answer=await read_answer(task_id=task_id, question=question)
         else:
@@ -156,7 +157,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         func_answer = ""
         if file:
             print(file)
-            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         answer = func_answer or await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.13']:
         answer = "https://raw.githubusercontent.com/Telvinvarghese/GA1/main/email.json"
@@ -211,8 +212,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA5.1', 'GA5.2', 'GA5.3', 'GA5.4', 'GA5.5', 'GA5.6', 'GA5.7']:
         if file:
             print(file)
-            file_path = file
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA5.8']:
@@ -221,8 +221,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA5.10']:
         if file:
             print(file)
-            file_path = file
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
             # image_url = f"data:image/png;base64,{answer}"
             # print(image_url)
             # img_data = base64.b64decode(answer)
