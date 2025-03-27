@@ -108,6 +108,8 @@ EXT_TO_PARSER = {".js": "babel", ".ts": "typescript", ".json": "json", ".css": "
                  ".html": "html", ".md": "markdown", ".yaml": "yaml", ".yml": "yaml"}
 
 async def GA1_3(file: UploadFile):
+    if os.getenv("VERCEL"):
+        return ""
     try:
         process = await asyncio.create_subprocess_exec(
             "npx", "-y", "prettier@3.4.2", "--parser", "markdown",
