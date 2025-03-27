@@ -66,5 +66,4 @@ pycountry
 jellyfish
 aiofiles
 geopy
-tabula-py
 pdfplumber
