@@ -140,8 +140,12 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         func_answer = ""
         if file:
             print(file)
-            func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-        answer = func_answer or await read_answer(task_id=task_id, question=question)
+            if not os.env('VERCEL_ENV'):
+                answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
+            else:
+                answer=await read_answer(task_id=task_id, question=question)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
         if file:
             print(file)
