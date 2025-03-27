@@ -222,7 +222,9 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             #     f.write(img_data)
     else:
         if file:
-            file_path = save_file(file)
+            # file_path = save_file(file)
+            print(file)
+            file_path = file
         answer = await read_answer(task_id=task_id, question=question)
         response = {"answer": answer}
         print(response)
