@@ -137,17 +137,22 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA1.3']:
-        func_answer = ""
         if file:
             print(file)
-            # print(os.getenv('VERCEL'))
             if not os.getenv('VERCEL'):
                 answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
             else:
                 answer=await read_answer(task_id=task_id, question=question)
         else:
             answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ['GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
+    elif task_id in ['GA1.16']:
+        # print(os.getenv('VERCEL'))
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
+            answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.17']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)

@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup  # type: ignore
 from fastapi import UploadFile  # type: ignore
 import aiofiles
 
+
 def extract_zip_file(source: str, extract_folder: str) -> str:
     """Extracts a ZIP file from a URL or local path."""
 
@@ -60,6 +61,7 @@ def extract_zip_file(source: str, extract_folder: str) -> str:
 # Running uv run - -with httpie - - https[URL] installs the Python package httpie and sends a HTTPS request to the URL.
 # Send a HTTPS request to https: // httpbin.org/get with the URL encoded parameter email set to 22f2001640@ds.study.iitm.ac. in
 # What is the JSON output of the command? (Paste only the JSON body, not the headers)
+
 
 def GA1_2_old(question):
     pattern = r"Send a HTTPS request to (https?://[^\s]+) with the URL encoded parameter email set to ([\w.%+-]+@[\w.-]+\.\w+)"
@@ -104,8 +106,10 @@ def GA1_2(question):
 # Download . In the directory where you downloaded it, make sure it is called README.md, and run npx - y prettier@3.4.2 README.md | sha256sum.
 # What is the output of the command?
 
+
 EXT_TO_PARSER = {".js": "babel", ".ts": "typescript", ".json": "json", ".css": "css",
                  ".html": "html", ".md": "markdown", ".yaml": "yaml", ".yml": "yaml"}
+
 
 async def GA1_3(file: UploadFile):
     try:
@@ -114,15 +118,17 @@ async def GA1_3(file: UploadFile):
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
         )
         formatted_output, _ = await process.communicate(await file.read())
-        if not formatted_output : {"error": "Prettier failed"}
+        if not formatted_output:
+            {"error": "Prettier failed"}
         return hashlib.sha256(formatted_output).hexdigest()
 
     except Exception as e:
         return {"error": str(e)}
-    
-# Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets. 
+
+# Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets.
 # (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
 #     What is the result?
+
 
 def GA1_4(question):
     sum_seq_pattern = r"SUM\(ARRAY_CONSTRAIN\(SEQUENCE\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\),\s*(\d+),\s*(\d+)\)\)"
@@ -139,6 +145,7 @@ def GA1_4(question):
 # =SUM(TAKE(SORTBY({11,14,12,9,5,4,13,0,1,6,7,12,10,12,0,11}, {10,9,13,2,11,8,16,14,7,15,5,4,6,1,3,12}), 1, 10))
 # What is the result?
 
+
 def GA1_5(question):
     sum_take_sortby_pattern = r"SUM\(TAKE\(SORTBY\(\{([\d,]+)\},\s*\{([\d,]+)\}\),\s*(\d+),\s*(\d+)\)\)"
     if match := re.search(sum_take_sortby_pattern, question):
@@ -153,6 +160,7 @@ def GA1_5(question):
 
 # Just above this paragraph, there's a hidden input with a secret value.
 # What is the value in the hidden input?
+
 
 def GA1_6(question, file_path=None):
     try:
@@ -198,8 +206,9 @@ def GA1_7(question):
                          timedelta(days=i)).weekday() == weekdays[weekday_str])
     return answer
 
-# Download and unzip file  which has a single extract.csv file inside. 
+# Download and unzip file  which has a single extract.csv file inside.
 # What is the value in the "answer" column of the CSV file?
+
 
 def GA1_8(question: str, zip_file: UploadFile):
     file_download_pattern = r"which has a single (.+\.csv) file inside\."
@@ -229,6 +238,7 @@ def GA1_8(question: str, zip_file: UploadFile):
 # [{"name":"Alice","age":74},{"name":"Bob","age":87},{"name":"Charlie","age":92},{"name":"David","age":50},{"name":"Emma","age":47},{"name":"Frank","age":29},{"name":"Grace","age":44},{"name":"Henry","age":38},{"name":"Ivy","age":91},{"name":"Jack","age":62},{"name":"Karen","age":4},{"name":"Liam","age":91},{"name":"Mary","age":42},{"name":"Nora","age":82},{"name":"Oscar","age":50},{"name":"Paul","age":62}]
 # Sorted JSON:
 
+
 def GA1_9(question):
     json_pattern = r"\[.*?\]|\{.*?\}"
     sort_pattern = r"Sort this JSON array of objects by the value of the (\w+) field.*?tie, sort by the (\w+) field"
@@ -256,6 +266,7 @@ def GA1_9(question):
 # Download and use multi-cursors and convert it into a single JSON object, where key = value pairs are converted into {key: value, key: value, ...}.
 # What's the result when you paste the JSON at tools-in -data-science.pages.dev/jsonhash and click the Hash button?
 
+
 async def GA1_10(file: UploadFile):
     try:
         content = await file.read()
@@ -268,9 +279,10 @@ async def GA1_10(file: UploadFile):
         return {"error": "Error reading file"}
     return hashlib.sha256(json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
 
-# Let's make sure you know how to select elements using CSS selectors. Find all <div>s having a foo class in the hidden element below. 
+# Let's make sure you know how to select elements using CSS selectors. Find all <div>s having a foo class in the hidden element below.
 # What's the sum of their data-value attributes?
 # Sum of data-value attributes:
+
 
 def GA1_11(question):
     html_data = question
@@ -291,6 +303,7 @@ def GA1_11(question):
 # data3.txt: Tab-separated file encoded in UTF-16
 # Each file has 2 columns: symbol and value. Sum up all the values where the symbol matches Œ OR ™ OR † across all three files.
 # What is the sum of all values associated with these symbols?
+
 
 async def GA1_12(question: str, zip_file: UploadFile):
     # Regex patterns
@@ -341,9 +354,10 @@ async def GA1_12(question: str, zip_file: UploadFile):
 # Download  and unzip it into a new folder, then replace all "IITM" ( in upper, lower, or mixed case) with "IIT Madras" in all files. Leave everything as- is - don't change the line endings.
 # What does running cat * | sha256sum in that folder show in bash?
 
+
 async def GA1_14(question: str, zip_file: UploadFile):
     # Step 1: Extract words to replace and the replacement word from the question
-    pattern=r'replace all "([^"]+)" \(in upper, lower, or mixed case\) with "([^"]+)" in all files'
+    pattern = r'replace all "([^"]+)" \(in upper, lower, or mixed case\) with "([^"]+)" in all files'
     match = re.search(pattern, question, re.IGNORECASE)
     if not match:
         raise ValueError("Invalid question format: Unable to extract words.")
@@ -380,6 +394,7 @@ async def GA1_14(question: str, zip_file: UploadFile):
 # Download and extract it. Use ls with options to list all files in the folder along with their date and file size.
 # What's the total size of all files at least 3352 bytes large and modified on or after Fri, 17 Aug, 2018, 4: 06 am IST?'
 
+
 async def GA1_15(question: str, zip_file: UploadFile):
     # Extract file size and modification date from the question
     size_pattern = r"at least (\d+) bytes"
@@ -394,12 +409,15 @@ async def GA1_15(question: str, zip_file: UploadFile):
     # Extract modification date
     date_match = re.search(date_pattern, question)
     if not date_match:
-        raise ValueError("No modification date criterion found in the question.")
+        raise ValueError(
+            "No modification date criterion found in the question.")
 
     date_str = date_match.group(1).replace(' IST', '').strip()
     try:
-        target_timestamp = datetime.strptime(date_str, "%a, %d %b, %Y, %I:%M %p")
-        target_timestamp = pytz.timezone("Asia/Kolkata").localize(target_timestamp)
+        target_timestamp = datetime.strptime(
+            date_str, "%a, %d %b, %Y, %I:%M %p")
+        target_timestamp = pytz.timezone(
+            "Asia/Kolkata").localize(target_timestamp)
     except ValueError as e:
         raise ValueError(f"Date format error: {e}")
 
@@ -421,6 +439,7 @@ async def GA1_15(question: str, zip_file: UploadFile):
 
 # Download and extract it. Use mv to move all files under folders into an empty folder. Then rename all files replacing each digit with the next. 1 becomes 2, 9 becomes 0, a1b9c.txt becomes a2b0c.txt.
 # What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?
+
 
 async def GA1_16_LINX(zip_file: UploadFile):
     extract_folder = "extracted"
@@ -464,17 +483,15 @@ async def GA1_16_LINX(zip_file: UploadFile):
 
 async def GA1_16(zip_file: UploadFile):
     # Use "/tmp/" for Vercel, or local paths when running locally
-    BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
-    if BASE_DIR == ".":
+    print(os.getenv("VERCEL"))
+    if not os.getenv("VERCEL"):
         return await GA1_16_LINX(zip_file)
     else:
-        return await GA1_16_Vercel(BASE_DIR,zip_file)
-    
-# Use "/tmp/" for Vercel, or local paths when running locally
-BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
-
+        return await GA1_16_Vercel("/tmp", zip_file)
 
 async def GA1_16_Vercel(zip_file: UploadFile):
+    # Use "/tmp/" for Vercel, or local paths when running locally
+    BASE_DIR = "/tmp" if os.getenv("VERCEL") else "."
     extract_folder = os.path.join(BASE_DIR, "extracted")
     merged_folder = os.path.join(BASE_DIR, "merged_folder")
 
@@ -535,9 +552,10 @@ async def GA1_16_Vercel(zip_file: UploadFile):
     os.remove(temp_zip_path)
 
     return checksum_result
-    
+
 # Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
 # How many lines are different between a.txt and b.txt?
+
 
 async def GA1_17(question: str, zip_file: UploadFile) -> int:
     files = re.findall(r'\b([^\/\\\s]+?\.[a-zA-Z0-9]+)\b', question)[:2]
@@ -556,6 +574,7 @@ async def GA1_17(question: str, zip_file: UploadFile) -> int:
 # Bronze	303	0.8
 # ...
 # What is the total sales of all the items in the "Gold" ticket type? Write SQL to calculate it.
+
 
 def GA1_18(question: str) -> str:
     """Extracts ticket type from the question and returns the corresponding SQL query dynamically."""
