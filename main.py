@@ -144,7 +144,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             if "error" in func_answer:
                 answer = await read_answer(task_id=task_id, question=question)
         answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ['GA1.3', 'GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
+    elif task_id in ['GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.16', 'GA1.17']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
