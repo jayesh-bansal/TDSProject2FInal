@@ -99,6 +99,7 @@ def GA1_2(question):
         return result
 
     return {"error": "Url and Email not found in the input text"}
+
 # Let's make sure you know how to use npx and prettier.
 # Download . In the directory where you downloaded it, make sure it is called README.md, and run npx - y prettier@3.4.2 README.md | sha256sum.
 # What is the output of the command?
@@ -117,7 +118,7 @@ async def GA1_3(file: UploadFile):
         return hashlib.sha256(formatted_output).hexdigest()
 
     except Exception as e:
-        return {"error": str(e)}
+        return "error :"+str(e)
     
 # Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets. 
 # (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
