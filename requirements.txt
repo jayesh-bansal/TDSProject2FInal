@@ -66,3 +66,4 @@ pycountry
 jellyfish
 aiofiles
 geopy
+pdfplumber
