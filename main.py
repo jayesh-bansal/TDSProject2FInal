@@ -141,7 +141,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         if file:
             print(file)
             func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file_path)
-            if "error" in func_answer:
+            if func_answer["error"]:
                 answer = await read_answer(task_id=task_id, question=question)
         else:
             answer = await read_answer(task_id=task_id, question=question)

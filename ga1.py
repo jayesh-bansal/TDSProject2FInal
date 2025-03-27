@@ -118,7 +118,7 @@ async def GA1_3(file: UploadFile):
         return hashlib.sha256(formatted_output).hexdigest()
 
     except Exception as e:
-        return "error :"+str(e)
+        return {"error": str(e)}
     
 # Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets. 
 # (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
