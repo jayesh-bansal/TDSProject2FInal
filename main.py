@@ -52,6 +52,7 @@ def classify_task(question: str) -> str:
             return task_id  # Return the first matching task ID
     return "Unknown"  # Default if no match is found
 
+
 def save_file(file: UploadFile):
     os.makedirs("uploads", exist_ok=True)
     if not file or not file.filename:
@@ -67,6 +68,7 @@ def save_file(file: UploadFile):
     except Exception as e:
         return f"Error saving file: {str(e)}"
     return file_path
+
 
 def get_file_path(question: str) -> str:
     """Extracts a single filename from the question and returns its full path in the /uploads directory."""
@@ -182,12 +184,14 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
-    # elif task_id in ['GA2.6']:
+    elif task_id in ['GA2.6']:
+        answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
     elif task_id in ['GA2.7']:
         answer = "https://github.com/Telvinvarghese/TDS"
     elif task_id in ['GA2.8']:
         answer = "https://hub.docker.com/repository/docker/telvinvarghese/py-hello/general"
-    # elif task_id in ['GA2.9']:
+    elif task_id in ['GA2.9']:
+        answer = "https://tds-ga2-9.vercel.app/api"
     elif task_id in ['GA2.10']:
         answer = "https://daeb-2409-4072-6e45-1953-c9d6-9624-b787-cecb.ngrok-free.app/"
     elif task_id in ["GA3.1", "GA3.2", "GA3.3", "GA3.5", "GA3.6"]:
@@ -200,7 +204,8 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ["GA3.7"]:
         answer = "https://tds-ga3-7.vercel.app/similarity"
-    # elif task_id in ["GA3.8"]:
+    elif task_id in ["GA3.8"]:
+        answer = "https://tds-ga3-8.vercel.app/execute"
     elif task_id in ['GA3.9']:
         answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA4.1', 'GA4.2', 'GA4.4', 'GA4.5', 'GA4.6', 'GA4.7']:
