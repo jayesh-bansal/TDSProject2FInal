@@ -63,4 +63,3 @@ pycountry==24.6.1
 jellyfish
 aiofiles
 geopy
-pdfplumber==0.11.5
