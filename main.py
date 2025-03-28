@@ -12,6 +12,7 @@ from io import BytesIO
 from PIL import Image
 import httpx  # type: ignore
 import aiofiles
+from typing import List
 
 app = FastAPI()
 
@@ -125,11 +126,13 @@ def Solve_Unknown_Task(question):
 
 
 @app.post("/api/")
-async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
+# async def receive_question(question: str = Form(...), file: UploadFile = File(None)):
+async def receive_question(question: str = Form(...), files: List[UploadFile] = File(None)):
+
     # if 'where is ' in question.lower():
     #     file_path = get_file_path(question)
     #     return {"question": question, "answer": file_path if file_path else "File not found"}
-
+    file = files[0]
     task_id = classify_task(question)
     if task_id == "Unknown":
         print(question)
