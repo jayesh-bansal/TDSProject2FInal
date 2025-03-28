@@ -47,11 +47,10 @@ TASKS, TASKS_ANSWERS = load_tasks_from_excel()
 def classify_task(question: str) -> str:
     """Classify a question based on keyword matching with TASKS."""
     question_lower = question.lower()  # Convert to lowercase for case-insensitive matching
-    for task_id, keywords in TASKS.items():
-        if any(keyword.lower() in question_lower for keyword in keywords.split(",")):
+    for task_id, keyword in TASKS.items():
+        if keyword.lower() in question_lower:
             return task_id  # Return the first matching task ID
     return "Unknown"  # Default if no match is found
-
 
 def save_file(file: UploadFile):
     os.makedirs("uploads", exist_ok=True)
@@ -68,7 +67,6 @@ def save_file(file: UploadFile):
     except Exception as e:
         return f"Error saving file: {str(e)}"
     return file_path
-
 
 def get_file_path(question: str) -> str:
     """Extracts a single filename from the question and returns its full path in the /uploads directory."""
@@ -132,6 +130,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
 
     task_id = classify_task(question)
     if task_id == "Unknown":
+        print(question)
         answer = Solve_Unknown_Task(question)
     elif task_id in ['GA1.1']:
         answer = await read_answer(task_id=task_id, question=question)
@@ -199,19 +198,22 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await read_answer(task_id=task_id, question=question)
-    # elif task_id in ["GA3.7"]:
+    elif task_id in ["GA3.7"]:
+        answer = "https://tds-ga3-7.vercel.app/similarity"
     # elif task_id in ["GA3.8"]:
     elif task_id in ['GA3.9']:
         answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA4.1', 'GA4.2', 'GA4.4', 'GA4.5', 'GA4.6', 'GA4.7']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
-    # elif task_id in ['GA4.3']:
+    elif task_id in ['GA4.3']:
+        answer = "https://tds-ga4-3.vercel.app/api/outline"
     elif task_id in ['GA4.8']:
         answer = "https://github.com/Telvinvarghese/test"
     elif task_id in ['GA4.9']:
         if file:
             print(file)
-            file_path = file
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA4.10']:
         answer = await read_answer(task_id=task_id, question=question)
