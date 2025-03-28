@@ -50,19 +50,9 @@
             background-color: #28a745 !important;
             border: none;
             font-size: 18px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
         }
         .btn-success:hover {
             background-color: #218838 !important;
-        }
-        #response {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-height: 300px;
-            overflow-y: auto;
         }
     </style>
 </head>
@@ -76,10 +66,10 @@
                     <textarea class="form-control" id="question" name="question" placeholder="Type your question here..." rows="6" required></textarea>
                 </div>
                 <div class="mb-3">
-                    <label for="file" class="form-label">Upload Files (Optional):</label>
-                    <input type="file" class="form-control" id="file" name="files" multiple accept=".png,.json,.jsonl,.pdf,.xlsx,.csv,.zip,.jpg,.jpeg,.txt,.md,.webp">
+                    <label for="file" class="form-label">Upload File (Optional):</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".png,.json,.jsonl,.pdf,.xlsx,.csv,.zip,.jpg,.jpeg,.txt,.md,.webp">
                 </div>
-                <button type="submit" class="btn btn-success w-100">
+                <button type="submit" class="btn btn-success w-100 d-flex justify-content-center align-items-center">
                     Submit <span class="loading"></span>
                 </button>
             </form>
@@ -96,23 +86,24 @@
             
             let formData = new FormData();
             let questionValue = document.getElementById("question").value.trim();
-            let fileInputs = document.getElementById("file").files;
+            let fileInput = document.getElementById("file").files[0];
             let responseBox = document.getElementById("response");
             let loadingIndicator = document.querySelector(".loading");
 
+            // Clear response box & show loading
             responseBox.textContent = "";
             loadingIndicator.style.display = "inline-block";
 
             if (questionValue.length === 0) {
-                responseBox.innerHTML = `<div class="alert alert-danger">Error: Question cannot be empty.</div>`;
+                responseBox.innerHTML = `<span class="error-message">Error: Question cannot be empty.</span>`;
                 loadingIndicator.style.display = "none";
                 return;
             }
 
             formData.append("question", questionValue);
-            
-            for (let file of fileInputs) {
-                formData.append("files", file);
+
+            if (fileInput) {
+                formData.append("file", fileInput);
             }
 
             try {
@@ -122,14 +113,15 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Server Error: ${response.status}`);
+                    throw new Error(`Server Error: ${response.status}, ${response.json}`);
                 }
 
                 let result = await response.json();
                 responseBox.innerHTML = `<strong>Response:</strong>\n${JSON.stringify(result, null, 2)}`;
+
                 document.getElementById("tds-form").reset();
             } catch (error) {
-                responseBox.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                responseBox.innerHTML = `<span class="error-message">Error: ${error.message}</span>`;
             } finally {
                 loadingIndicator.style.display = "none";
             }
