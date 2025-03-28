@@ -112,7 +112,7 @@ def Solve_Unknown_Task(question):
         "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": question+" return only the answer"}]
     }
-    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
+    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDAxNTBAZHMuc3R1ZHkuaWl0bS5hYy5pbiJ9.Po4ffWC8vCUNjE62Epu-JdCgfedBKQHaypJiy6tjyHI"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {API_KEY}"
