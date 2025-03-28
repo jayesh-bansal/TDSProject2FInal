@@ -13,9 +13,6 @@ et_xmlfile==2.0.0
 exceptiongroup==1.2.2
 fake-useragent==2.1.0
 fastapi==0.115.11
-google-auth==2.38.0
-google-auth-oauthlib==1.2.1
-gspread==6.2.0
 h11
 httplib2==0.22.0
 httpx
