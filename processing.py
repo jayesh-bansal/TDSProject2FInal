@@ -3,10 +3,11 @@ from ga2 import GA2_2, GA2_4, GA2_5, GA2_5_file, GA2_9_old
 from ga2_9 import read_student_data, get_students
 from ga3 import GA3_1, GA3_2, GA3_3, GA3_4, GA3_5, GA3_6
 from ga4 import GA4_1, GA4_2, GA4_4, GA4_5, GA4_6, GA4_7, GA4_9_without_pdfplumber,GA4_10
-from ga5 import GA5_1, GA5_2, GA5_3, GA5_4, GA5_5, GA5_6, GA5_7, GA5_8, GA5_10
+from ga5 import GA5_1, GA5_2, GA5_3, GA5_3_file, GA5_4, GA5_4_file,GA5_5, GA5_6, GA5_7, GA5_8, GA5_10
 import asyncio
+import aiofiles
 import subprocess
-
+import os
 
 async def fetch_answer(task_id, question, file_path):
     # if task_id == 'GA1.1': extract from excel
@@ -103,9 +104,22 @@ async def fetch_answer(task_id, question, file_path):
     if task_id == 'GA5.2':
         answer = await GA5_2(question, file_path)
     if task_id == 'GA5.3':
-        answer = await GA5_3(question, file_path)
+        if file_path:
+            answer = await GA5_3(question, file_path)
+        else:
+            file_path = os.path.join(os.path.dirname(__file__), "s-anand.net-May-2024.gz")
+            async with aiofiles.open(file_path, "rb") as file:
+                content = await file.read()
+            answer = await GA5_3_file(question, content)
     if task_id == 'GA5.4':
-        answer = await GA5_4(question, file_path)
+        if file_path:
+            answer = await GA5_4(question, file_path)
+        else:
+            file_path = os.path.join(os.path.dirname(
+                __file__), "s-anand.net-May-2024.gz")
+            async with aiofiles.open(file_path, "rb") as file:
+                content = await file.read()
+            answer = await GA5_4_file(question, content)
     if task_id == 'GA5.5':
         answer = await GA5_5(question, file_path)
     if task_id == 'GA5.6':

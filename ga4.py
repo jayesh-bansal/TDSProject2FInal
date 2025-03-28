@@ -191,8 +191,10 @@ def GA4_5(question):
     country = match2.group(1).strip()
     locator = Nominatim(user_agent="myGeocoder")
     country_code = get_country_code(country)
+    print(city,country,country_code)
     location = locator.geocode(city, country_codes=country_code)
     # print(location.raw, location.point, location.longitude, location.latitude, location.altitude, location.address)
+    print(location.raw["boundingbox"])
     result = location.raw["boundingbox"][0]
     # print(result)
     return result
@@ -303,5 +305,5 @@ async def GA4_10(question: str, file: UploadFile):
     # doc = fitz.open(stream=pdf_stream, filetype="pdf")
     # md_text = pymupdf4llm.to_markdown(doc)  # Convert PDF to Markdown
     # print(md_text)
-    md_text=""
+    md_text = ""
     return md_text

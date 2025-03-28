@@ -11,6 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import httpx  # type: ignore
+import aiofiles
 
 app = FastAPI()
 
@@ -112,7 +113,7 @@ def Solve_Unknown_Task(question):
         "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": question+" return only the answer"}]
     }
-    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDAxNTBAZHMuc3R1ZHkuaWl0bS5hYy5pbiJ9.Po4ffWC8vCUNjE62Epu-JdCgfedBKQHaypJiy6tjyHI"
+    API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {API_KEY}"
@@ -142,7 +143,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             if not os.getenv('VERCEL'):
                 answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
             else:
-                answer=await read_answer(task_id=task_id, question=question)
+                answer = await read_answer(task_id=task_id, question=question)
         else:
             answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.16']:
@@ -214,12 +215,18 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA4.10']:
         answer = await read_answer(task_id=task_id, question=question)
-    elif task_id in ['GA5.1', 'GA5.2', 'GA5.3', 'GA5.4', 'GA5.5', 'GA5.6', 'GA5.7']:
+    elif task_id in ['GA5.1', 'GA5.2', 'GA5.5', 'GA5.6', 'GA5.7']:
         if file:
             print(file)
             answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         else:
             answer = await read_answer(task_id=task_id, question=question)
+    elif task_id in ['GA5.3', 'GA5.4']:
+        if file:
+            print(file)
+            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        else:
+            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.8']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     # elif task_id in ['GA5.9']:

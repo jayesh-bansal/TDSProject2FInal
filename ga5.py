@@ -116,11 +116,8 @@ async def GA5_2(question: str, file: UploadFile):
     print(f"Unique Names: {len(names)}, Unique IDs: {len(ids)}")
     return len(ids)
 
-
-async def GA5_3(question: str, file: UploadFile):
+async def GA5_3_file(question: str, file_content):
     """Count successful requests for a given request type and page section within a time range."""
-
-    file_content = await file.read()
     file_path = BytesIO(file_content)  # In-memory file-like object
 
     # Extract parameters from the question using regex
@@ -134,13 +131,10 @@ async def GA5_3(question: str, file: UploadFile):
     request_type, target_section, start_hour, end_hour, target_weekday = match.groups()
     target_weekday = target_weekday.capitalize() + "day"
 
-    # Extract status code range from the question
-    success_match = re.search(
-        r'status codes between (\d+) and (\d+)', question, re.IGNORECASE)
-    status_min = int(success_match.group(1))
-    status_max = int(success_match.group(2))
+    status_min = 200
+    status_max = 300
 
-    print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Status: {status_min}-{status_max}, Section: {target_section}, Day: {target_weekday}")
+    print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Section: {target_section}, Day: {target_weekday}")
 
     successful_requests = 0
 
@@ -183,6 +177,100 @@ async def GA5_3(question: str, file: UploadFile):
         return {"error": str(e)}
 
     return successful_requests
+
+async def GA5_3(question: str, file: UploadFile):
+    """Count successful requests for a given request type and page section within a time range."""
+
+    file_content = await file.read()
+    file_path = BytesIO(file_content)  # In-memory file-like object
+
+    # Extract parameters from the question using regex
+    match = re.search(
+        r'What is the number of successful (\w+) requests for pages under (/[a-zA-Z0-9_/]+) from (\d+):00 until before (\d+):00 on (\w+)days?',
+        question, re.IGNORECASE)
+
+    if not match:
+        return {"error": "Invalid question format"}
+
+    request_type, target_section, start_hour, end_hour, target_weekday = match.groups()
+    target_weekday = target_weekday.capitalize() + "day"
+
+    status_min = 200
+    status_max = 300
+
+    print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Section: {target_section}, Day: {target_weekday}")
+
+    successful_requests = 0
+
+    try:
+        with gzip.GzipFile(fileobj=file_path, mode="r") as gz_file:
+            file_content = gz_file.read().decode("utf-8")
+            file = file_content.splitlines()
+            for line in file:
+                parts = line.split()
+
+                # Ensure the log line has the minimum required fields
+                if len(parts) < 9:
+                    print(f"Skipping malformed line: {line.strip()}")
+                    continue
+
+                time_part = parts[3].strip('[]')  # Extract timestamp
+                request_method = parts[5].replace('"', '').upper()
+                url = parts[6]
+                status_code = int(parts[8])
+
+                try:
+                    log_time = datetime.strptime(
+                        time_part, "%d/%b/%Y:%H:%M:%S")
+                    log_time = log_time.astimezone()  # Ensure correct timezone
+                except ValueError:
+                    print(f"Skipping invalid date format: {time_part}")
+                    continue
+
+                request_weekday = log_time.strftime('%A')
+
+                # Apply filters
+                if (status_min <= status_code <= status_max and
+                    request_method == request_type and
+                    url.startswith(target_section) and
+                    int(start_hour) <= log_time.hour < int(end_hour) and
+                        request_weekday == target_weekday):
+                    successful_requests += 1
+
+    except Exception as e:
+        return {"error": str(e)}
+
+    return successful_requests
+
+async def GA5_4_file(question: str, file_content):
+    file_path = BytesIO(file_content)  # In-memory file-like object
+    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', question)
+    target_date = datetime.strptime(date_match.group(
+        1), "%Y-%m-%d").date() if date_match else None
+    ip_bandwidth = defaultdict(int)
+    log_pattern = re.search(
+        r'Across all requests under ([a-zA-Z0-9]+)/ on', question)
+    language_pattern = str("/"+log_pattern.group(1)+"/")
+    print(language_pattern, target_date)
+    with gzip.GzipFile(fileobj=file_path, mode="r") as gz_file:
+        file_content = gz_file.read().decode("utf-8")
+        file = file_content.splitlines()
+        for line in file:
+            parts = line.split()
+            ip_address = parts[0]
+            time_part = parts[3].strip('[]')
+            request_method = parts[5].replace('"', '').upper()
+            url = parts[6]
+            status_code = int(parts[8])
+            log_time = datetime.strptime(time_part, "%d/%b/%Y:%H:%M:%S")
+            log_time = log_time.astimezone()  # Convert timezone if needed
+            size = int(parts[9]) if parts[9].isdigit() else 0
+            if (url.startswith(language_pattern) and log_time.date() == target_date):
+                ip_bandwidth[ip_address] += int(size)
+                # print(ip_address, time_part, url, size)
+    top_ip = max(ip_bandwidth, key=ip_bandwidth.get, default=None)
+    top_bandwidth = ip_bandwidth[top_ip] if top_ip else 0
+    return top_bandwidth
 
 async def GA5_4(question: str, file: UploadFile):
     file_content = await file.read()
