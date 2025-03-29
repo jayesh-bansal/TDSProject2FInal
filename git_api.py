@@ -197,8 +197,7 @@ def GA2_3(question):
         pattern=pattern,
         replacement=email
     )
-    trigger_github_workflow(token=token, repo="Telvinvarghese/website",
-                            workflow_file="daily_commit.yml")  # Trigger the workflow after
+    # trigger_github_workflow(token=token, repo="Telvinvarghese/website",workflow_file="daily_commit.yml")  # Trigger the workflow after
     time.sleep(15)
     return "https://telvinvarghese.github.io/website/"
 
@@ -218,7 +217,7 @@ def GA2_7(question):
         pattern=pattern,
         replacement=email
     )
-    trigger_github_workflow(token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
+    # trigger_github_workflow(token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
     return "https://raw.githubusercontent.com/Telvinvarghese/Test"
 
