@@ -3,7 +3,7 @@ from ga2 import GA2_2, GA2_4, GA2_5, GA2_5_file, GA2_9_old
 from ga2_9 import read_student_data, get_students
 from ga3 import GA3_1, GA3_2, GA3_3, GA3_4, GA3_5, GA3_6
 from ga4 import GA4_1, GA4_2, GA4_4, GA4_5, GA4_6, GA4_7, GA4_9_without_pdfplumber,GA4_10
-from ga5 import GA5_1, GA5_2, GA5_3, GA5_3_file, GA5_4, GA5_4_file,GA5_5, GA5_6, GA5_7, GA5_8, GA5_10
+from ga5 import GA5_1, GA5_2, GA5_3, GA5_3_file, GA5_4, GA5_4_file,GA5_5, GA5_6, GA5_7, GA5_8,GA5_9, GA5_10
 import asyncio
 import aiofiles
 import subprocess
@@ -128,7 +128,8 @@ async def fetch_answer(task_id, question, file_path):
         answer = await GA5_7(question, file_path)
     if task_id == 'GA5.8':
         answer = GA5_8(question)
-    # if task_id == 'GA5.9': extract from excel
+    if task_id == 'GA5.9': 
+        answer = await GA5_9(question)
     if task_id == 'GA5.10':
         answer = await GA5_10(question, file_path)
     return answer
