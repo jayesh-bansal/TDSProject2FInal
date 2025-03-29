@@ -13,6 +13,7 @@ from PIL import Image
 import httpx  # type: ignore
 import aiofiles
 from typing import List
+from git_api import GA1_13, GA2_3, GA2_7, GA4_8
 
 app = FastAPI()
 
@@ -170,11 +171,13 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             func_answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
         answer = func_answer or await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.13']:
-        answer = "https://raw.githubusercontent.com/Telvinvarghese/GA1/main/email.json"
+        answer=GA1_13(question)
+        # answer = "https://raw.githubusercontent.com/Telvinvarghese/test/main/email.json"
     elif task_id in ['GA2.1']:
         answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA2.3']:
-        answer = "https://telvinvarghese.github.io/website/"
+        answer = GA2_3(question)
+        # answer = "https://telvinvarghese.github.io/website/"
     elif task_id in ['GA2.2', 'GA2.4']:
         if file:
             print(file)
@@ -190,13 +193,14 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA2.6']:
         answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
     elif task_id in ['GA2.7']:
-        answer = "https://github.com/Telvinvarghese/TDS"
+        answer = GA2_7(question)
+        # answer = "https://github.com/Telvinvarghese/test"
     elif task_id in ['GA2.8']:
         answer = "https://hub.docker.com/repository/docker/telvinvarghese/py-hello/general"
     elif task_id in ['GA2.9']:
         answer = "https://tds-ga2-9.vercel.app/api"
     elif task_id in ['GA2.10']:
-        answer = "https://daeb-2409-4072-6e45-1953-c9d6-9624-b787-cecb.ngrok-free.app/"
+        answer = "https://3db5-223-178-84-140.ngrok-free.app/"
     elif task_id in ["GA3.1", "GA3.2", "GA3.3", "GA3.5", "GA3.6"]:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ["GA3.4"]:
@@ -216,7 +220,8 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA4.3']:
         answer = "https://tds-ga4-3.vercel.app/api/outline"
     elif task_id in ['GA4.8']:
-        answer = "https://github.com/Telvinvarghese/test"
+        answer = GA4_8(question)
+        # answer = "https://github.com/Telvinvarghese/test"
     elif task_id in ['GA4.9']:
         if file:
             print(file)
