@@ -152,12 +152,17 @@ def trigger_github_workflow(token, repo, workflow_file, branch="main"):
 
     data = {"ref": branch}
 
-    response = requests.post(url, headers=headers, json=data)
+    try:
+        response = requests.post(url, headers=headers, json=data)
 
-    if response.status_code == 204:
-        print("✅ Workflow triggered successfully!")
-    else:
-        print(f"❌ Failed to trigger workflow: {response.status_code} - {response.text}")
+        if response.status_code == 204:
+            print("✅ Workflow triggered successfully!")
+        else:
+            print(f"❌ Failed to trigger workflow: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        pass
+        print(f"❌ Error: {e}")
 
 def GA1_13(question):
     # Capture email in group(1)
