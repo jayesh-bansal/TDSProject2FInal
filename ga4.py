@@ -1,4 +1,3 @@
-# import fitz
 import xml.etree.ElementTree as ET
 import pycountry  # type: ignore
 import pandas as pd
@@ -12,8 +11,6 @@ import pytz
 from geopy.geocoders import Nominatim  # type: ignore
 import io
 from fastapi import UploadFile  # type: ignore
-# import pymupdf4llm
-# import tabula
 
 
 def GA4_1(question: str):
@@ -296,14 +293,6 @@ async def GA4_9_without_pdfplumber(question: str):
 
 # q = "What is the total Maths marks of students who scored 36 or more marks in Economics in groups 36-60 (including both groups)?"
 
-
 async def GA4_10(question: str, file: UploadFile):
-    # file_content = await file.read()
-    # # Convert bytes to a file-like object
-    # pdf_stream = io.BytesIO(file_content)
-    # # Open the PDF with PyMuPDF
-    # doc = fitz.open(stream=pdf_stream, filetype="pdf")
-    # md_text = pymupdf4llm.to_markdown(doc)  # Convert PDF to Markdown
-    # print(md_text)
     md_text = ""
     return md_text
