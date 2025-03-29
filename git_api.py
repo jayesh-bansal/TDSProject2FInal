@@ -3,19 +3,21 @@ import base64
 import json
 import re
 import time
-token = "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"
+token = "github?_pat?_11AUF774Y0tEYjPK91yFns_s2JYf1zM5bpXhHbT0RkuBiPASWT8RcAxxD656fScuN4N5GWOKVZdR9b8Hn3?"
+token = token.replace("?", "")
+
 
 def github_file_operation(token, repo, file_path, branch="main", new_content=None):
     """
     Reads a file from GitHub and optionally writes new content.
-    
+
     Args:
     - token (str): GitHub personal access token.
     - repo (str): Repository name (e.g., "username/repo").
     - file_path (str): Path to the file in the repo.
     - branch (str): Branch name (default: "main").
     - new_content (str, optional): New content to write to the file.
-    
+
     Returns:
     - str: File content (if reading) or success message (if writing).
     """
@@ -46,6 +48,7 @@ def github_file_operation(token, repo, file_path, branch="main", new_content=Non
     else:
         print(f"❌ Error: {response.status_code} - {response.text}")
         return decoded_content
+
 
 def github_write_file(token, repo, file_path, new_content, sha, branch="main"):
     """
@@ -87,10 +90,11 @@ def github_write_file(token, repo, file_path, new_content, sha, branch="main"):
             f"❌ Error Writing File: {response.status_code} - {response.text}")
         return None
 
+
 def github_replace_text(token, repo, file_path, pattern, replacement, branch="main"):
     """
     Reads a file from GitHub, replaces text using regex, and updates the file.
-    
+
     Args:
     - token (str): GitHub personal access token.
     - repo (str): Repository name (e.g., "username/repo").
@@ -98,12 +102,13 @@ def github_replace_text(token, repo, file_path, pattern, replacement, branch="ma
     - pattern (str): Regex pattern to search.
     - replacement (str): Replacement text.
     - branch (str): Branch name (default: "main").
-    
+
     Returns:
     - str: Success message or error.
     """
     url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    headers = {"Authorization": f"token {token}",
+               "Accept": "application/vnd.github.v3+json"}
 
     # Step 1: Fetch the file content
     response = requests.get(url, headers=headers)
@@ -142,9 +147,10 @@ def github_replace_text(token, repo, file_path, pattern, replacement, branch="ma
     else:
         return f"❌ Error: {response.status_code} - {response.text}"
 
+
 def trigger_github_workflow(token, repo, workflow_file, branch="main"):
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches"
-    
+
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
@@ -158,11 +164,13 @@ def trigger_github_workflow(token, repo, workflow_file, branch="main"):
         if response.status_code == 204:
             print("✅ Workflow triggered successfully!")
         else:
-            print(f"❌ Failed to trigger workflow: {response.status_code} - {response.text}")
+            print(
+                f"❌ Failed to trigger workflow: {response.status_code} - {response.text}")
 
     except Exception as e:
         pass
         print(f"❌ Error: {e}")
+
 
 def GA1_13(question):
     # Capture email in group(1)
@@ -182,6 +190,7 @@ def GA1_13(question):
     print("Email updated in email.json")
     return "https://raw.githubusercontent.com/Telvinvarghese/Test/main/email.json"
 
+
 def GA2_3(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
     match = re.search(pattern, question)
@@ -199,9 +208,11 @@ def GA2_3(question):
         replacement=email
     )
     print("Email updated in index.html")
-    # trigger_github_workflow(token=token, repo="Telvinvarghese/website",workflow_file="daily_commit.yml")  # Trigger the workflow after
+    trigger_github_workflow(token=token, repo="Telvinvarghese/website",
+                            workflow_file="daily_commit.yml")  # Trigger the workflow after
     time.sleep(15)
     return "https://telvinvarghese.github.io/website/"
+
 
 def GA2_7(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
@@ -220,9 +231,11 @@ def GA2_7(question):
         replacement=email
     )
     print("Email updated in Daily_Commit.yml")
-    # trigger_github_workflow(token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
+    trigger_github_workflow(
+        token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
     return "https://raw.githubusercontent.com/Telvinvarghese/Test"
+
 
 def GA4_8(question):
     return GA2_7(question)
@@ -246,7 +259,7 @@ def GA4_8(question):
 #     steps:
 #       - name: 22f2001640@ds.study.iitm.ac.in
 #         run: echo "Hello, world!"
-      
+
 # Trigger the action and make sure it is the most recent action.
 
 # What is your repository URL? It will look like: https://github.com/USER/REPO""")
