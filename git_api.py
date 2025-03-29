@@ -179,6 +179,7 @@ def GA1_13(question):
         pattern=r'"\s*email\s*"\s*:\s*"[^"]+"',
         replacement=f'"email": "{email}"'
     )
+    print("Email updated in email.json")
     return "https://raw.githubusercontent.com/Telvinvarghese/Test/main/email.json"
 
 def GA2_3(question):
@@ -197,6 +198,7 @@ def GA2_3(question):
         pattern=pattern,
         replacement=email
     )
+    print("Email updated in index.html")
     # trigger_github_workflow(token=token, repo="Telvinvarghese/website",workflow_file="daily_commit.yml")  # Trigger the workflow after
     time.sleep(15)
     return "https://telvinvarghese.github.io/website/"
@@ -217,6 +219,7 @@ def GA2_7(question):
         pattern=pattern,
         replacement=email
     )
+    print("Email updated in Daily_Commit.yml")
     # trigger_github_workflow(token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
     return "https://raw.githubusercontent.com/Telvinvarghese/Test"
