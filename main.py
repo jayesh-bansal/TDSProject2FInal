@@ -120,7 +120,7 @@ def Solve_Unknown_Task(question):
         "Authorization": f"Bearer {API_KEY}"
     }
     response = httpx.post(BASE_URL + "/chat/completions",
-                          json=data, headers=headers)
+                          json=data, headers=headers, timeout=60)
 
     return response.json().get("choices", [])[0].get("message", {}).get("content")
 
@@ -239,7 +239,8 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.8']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
-    # elif task_id in ['GA5.9']:
+    elif task_id in ['GA5.9']:
+        answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.10']:
         if file:
             print(file)

@@ -14,6 +14,7 @@ import base64
 from io import BytesIO
 from fastapi import UploadFile  # type: ignore
 import io
+from process_yt import get_transcript, correct_transcript
 
 
 def get_country_code(country_name: str) -> str:
@@ -442,6 +443,12 @@ ORDER BY post_id ASC
 # Example usage
 # sql_query = GA5_8("Write a DuckDB SQL query to find all posts IDs after 2025-01-21T14: 36:47.099Z with at least 1 comment with 5 useful stars, sorted. The result should be a table with a single column called post_id, and the relevant post IDs should be sorted in ascending order.", file_path)
 # print("Key count:", key_count)
+
+
+async def GA5_9(question):
+    transcript = correct_transcript(get_transcript(question))
+    print(transcript)
+    return transcript
 
 
 async def GA5_10(question: str, file: UploadFile):
