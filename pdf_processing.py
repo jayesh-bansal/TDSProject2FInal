@@ -2,13 +2,15 @@ from fastapi import FastAPI, UploadFile, Form
 import httpx
 
 app = FastAPI()
+
+
 async def send_file_to_vercel(question: str, file: UploadFile, vercel_url: str):
     """Sends an uploaded file to the deployed Vercel FastAPI endpoint."""
     url = f"{vercel_url}/process-pdf"
     files = {"file": (file.filename, file.file, file.content_type)}
     data = {"question": question}  # ✅ Ensure question is sent in form data
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.post(url, files=files, data=data, timeout=60)
 
     try:
