@@ -32,7 +32,7 @@ def correct_transcript(transcript):
         "Authorization": f"Bearer {API_KEY}"
     }
     response = httpx.post(BASE_URL + "/chat/completions",
-                          json=data, headers=headers, timeout=60)
+                          json=data, headers=headers, timeout=120)
 
     return response.json().get("choices", [])[0].get("message", {}).get("content")
 
