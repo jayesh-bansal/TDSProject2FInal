@@ -234,7 +234,7 @@ def GA2_7(question):
     trigger_github_workflow(
         token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
-    return "https://raw.githubusercontent.com/Telvinvarghese/Test"
+    return "https://github.com/Telvinvarghese/Test"
 
 
 def GA4_8(question):
