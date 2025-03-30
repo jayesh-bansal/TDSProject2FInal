@@ -236,8 +236,7 @@ def GA2_3(question):
     trigger_github_workflow(token=token, repo="Telvinvarghese/website",
                             workflow_file="daily_commit.yml")  # Trigger the workflow after
     time.sleep(15)
-    return "https://telvinvarghese.github.io/website/"
-
+    return "https://telvinvarghese.github.io/website/?v=2"
 
 async def GA2_6_file(file: UploadFile = File(...)):
     """
@@ -254,7 +253,6 @@ async def GA2_6_file(file: UploadFile = File(...)):
     print({"message": "File uploaded successfully!", "github_response": response})
     time.sleep(10)
     return True
-
 
 async def GA2_9_file(file: UploadFile = File(...)):
     """
