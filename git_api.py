@@ -3,6 +3,9 @@ import base64
 import json
 import re
 import time
+from fastapi import FastAPI, Form, File, UploadFile # type: ignore
+import asyncio
+from fastapi.responses import HTMLResponse
 token = "github?_pat?_11AUF774Y0tEYjPK91yFns_s2JYf1zM5bpXhHbT0RkuBiPASWT8RcAxxD656fScuN4N5GWOKVZdR9b8Hn3?"
 token = token.replace("?", "")
 
@@ -50,7 +53,24 @@ def github_file_operation(token, repo, file_path, branch="main", new_content=Non
         return decoded_content
 
 
-def github_write_file(token, repo, file_path, new_content, sha, branch="main"):
+def get_github_file_sha(token, repo, file_path, branch="main"):
+    """Fetches the SHA of a file in GitHub, if it exists."""
+    url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
+    headers = {"Authorization": f"token {token}"}
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        return response.json()["sha"]  # Return existing file SHA
+    elif response.status_code == 404:
+        return None  # File does not exist
+    else:
+        print(
+            f"❌ Error fetching SHA: {response.status_code} - {response.text}")
+        return None
+
+
+def github_write_file(token, repo, file_path, new_content,branch="main"):
     """
     Writes (creates or updates) a file in GitHub.
 
@@ -69,7 +89,13 @@ def github_write_file(token, repo, file_path, new_content, sha, branch="main"):
     headers = {"Authorization": f"token {token}",
                "Accept": "application/vnd.github.v3+json"}
 
-    encoded_content = base64.b64encode(new_content.encode()).decode()
+    sha = get_github_file_sha(token, repo, file_path, branch)
+    if isinstance(new_content, str):
+        encoded_content = base64.b64encode(
+        new_content.encode()).decode()  # If it's a string, encode it
+    else:
+        encoded_content = base64.b64encode(
+        new_content).decode()  # If it's bytes, use directly
 
     data = {
         "message": f"Updating {file_path}",
@@ -190,7 +216,6 @@ def GA1_13(question):
     print("Email updated in email.json")
     return "https://raw.githubusercontent.com/Telvinvarghese/Test/main/email.json"
 
-
 def GA2_3(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
     match = re.search(pattern, question)
@@ -214,6 +239,22 @@ def GA2_3(question):
     return "https://telvinvarghese.github.io/website/"
 
 
+async def GA2_9_file(file: UploadFile = File(...)):
+    """
+    Upload a file via FastAPI and write it to GitHub.
+    """
+    file_content = await file.read()  # Read the uploaded file content
+
+    file_path_on_github = f"uploads/q-fastapi.csv"  # Define GitHub path
+
+    # Upload the file to GitHub
+    response = github_write_file(
+        token, "Telvinvarghese/tds_ga2_9", file_path_on_github, file_content)
+
+    print({"message": "File uploaded successfully!", "github_response": response})
+    time.sleep(10)
+    return True
+  
 def GA2_7(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
     match = re.search(pattern, question)
@@ -235,7 +276,6 @@ def GA2_7(question):
         token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
     return "https://github.com/Telvinvarghese/Test"
-
 
 def GA4_8(question):
     return GA2_7(question)
