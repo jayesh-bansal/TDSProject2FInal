@@ -239,6 +239,23 @@ def GA2_3(question):
     return "https://telvinvarghese.github.io/website/"
 
 
+async def GA2_6_file(file: UploadFile = File(...)):
+    """
+    Upload a file via FastAPI and write it to GitHub.
+    """
+    file_content = await file.read()  # Read the uploaded file content
+
+    file_path_on_github = f"q-vercel-python.json"  # Define GitHub path
+
+    # Upload the file to GitHub
+    response = github_write_file(
+        token, "Telvinvarghese/api", file_path_on_github, file_content)
+
+    print({"message": "File uploaded successfully!", "github_response": response})
+    time.sleep(10)
+    return True
+
+
 async def GA2_9_file(file: UploadFile = File(...)):
     """
     Upload a file via FastAPI and write it to GitHub.

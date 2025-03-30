@@ -13,7 +13,7 @@ from PIL import Image
 import httpx  # type: ignore
 import aiofiles
 from typing import List
-from git_api import GA1_13, GA2_3, GA2_7, GA4_8, GA2_9_file
+from git_api import GA1_13, GA2_3, GA2_7, GA4_8, GA2_9_file, GA2_6_file
 
 app = FastAPI()
 
@@ -191,7 +191,13 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         else:
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA2.6']:
-        answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
+        print(file)
+        # file_content = await file.read()
+        flag = await GA2_6_file(file)
+        if flag == "True":
+            answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
+        else:
+            answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
     elif task_id in ['GA2.7']:
         answer = GA2_7(question)
         # answer = "https://github.com/Telvinvarghese/Test"
