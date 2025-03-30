@@ -154,10 +154,13 @@ def GA4_4(question):
     # local_time = datetime.today()
     local_time = datetime.now(pytz.timezone(time_zone))
     print(local_time.date().strftime('%Y-%m-%d'))
-    date_list = pd.date_range(
-        local_time, periods=len(daily_high_values)).tolist()
-    date_list = [date_list[i].date().strftime('%Y-%m-%d')
-                 for i in range(len(date_list))]
+    # date_list = pd.date_range(local_time, periods=len(daily_high_values)).tolist()
+    date_list = [(local_time + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(14)]
+
+    # Ensure lists have 14 entries
+    while len(daily_summary_list) < 14:
+        daily_summary_list.append("Data not available")
+        
     zipped = zip(date_list, daily_summary_list)
     df = pd.DataFrame(list(zipped), columns=['Date', 'Summary'])
     json_data = df.set_index('Date')['Summary'].to_json()
