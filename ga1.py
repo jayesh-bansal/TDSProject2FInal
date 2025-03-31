@@ -113,17 +113,32 @@ EXT_TO_PARSER = {".js": "babel", ".ts": "typescript", ".json": "json", ".css": "
 
 async def GA1_3(file: UploadFile):
     try:
-        process = await asyncio.create_subprocess_exec(
-            "npx", "-y", "prettier@3.4.2", "--parser", "markdown",
-            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
-        )
-        formatted_output, _ = await process.communicate(await file.read())
-        if not formatted_output:
-            {"error": "Prettier failed"}
-        return hashlib.sha256(formatted_output).hexdigest()
+        # Save the uploaded file
+        file_path = f"/tmp/{file.filename}"
+        with open(file_path, "wb") as buffer:
+            buffer.write(file.file.read())
 
+        # Check if npx, prettier, and sha256sum are installed
+        npx_check = subprocess.run(["npx", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        prettier_check = subprocess.run(["npx", "prettier", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        sha256_check = subprocess.run(["sha256sum", "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Install if missing
+        if npx_check.returncode != 0 or prettier_check.returncode != 0:
+            subprocess.run(["npm", "install", "-g", "npx", "prettier@3.4.2"])
+        if sha256_check.returncode != 0:
+            subprocess.run(["apt-get", "install", "-y", "coreutils"])
+
+        # Run npx and sha256sum command using subprocess
+        cmd = f"npx -y prettier@3.4.2 {file_path} | sha256sum"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            raise HTTPException(status_code=500, detail=result.stderr)
+
+        return result.stdout.strip().split()[0]
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Let's make sure you can write formulas in Google Sheets. Type this formula into Google Sheets.
 # (It won't work in Excel)= SUM(ARRAY_CONSTRAIN(SEQUENCE(100, 100, 6, 10), 1, 10))
