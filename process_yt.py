@@ -26,7 +26,7 @@ def get_transcript(question):
     return transcript
 
 
-API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
+API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjI0ZjEwMDE4OTVAZHMuc3R1ZHkuaWl0bS5hYy5pbiJ9.U2TU0e6hnNkMzm1FZDj7A__h2Y4wN7VltiAjNHmC1p4"
 
 
 def correct_transcript(transcript):
