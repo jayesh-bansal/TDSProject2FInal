@@ -6,7 +6,7 @@ import time
 from fastapi import FastAPI, Form, File, UploadFile  # type: ignore
 import asyncio
 from fastapi.responses import HTMLResponse
-token = "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"
+token = "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"
 
 
 def github_file_operation(token, repo, file_path, branch="main", new_content=None):
