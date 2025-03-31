@@ -16,6 +16,7 @@ import requests
 import numpy as np
 import pandas as pd  # type: ignore
 import pytz
+from fastapi import UploadFile, HTTPException
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup  # type: ignore
 from fastapi import UploadFile  # type: ignore
