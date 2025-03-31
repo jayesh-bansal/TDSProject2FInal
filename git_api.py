@@ -217,25 +217,25 @@ def GA1_13(question):
 
 
 def GA2_3(question):
-    pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
-    match = re.search(pattern, question)
-    if match:
-        email = match.group(1)+"@ds.study.iitm.ac.in"
-        print("Email ID", email)
-    else:
-        print("No email found")
-    pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
-    github_replace_text(
-        token=token,
-        repo="jayesh-bansal/Website_TDSP2",
-        file_path="index.html",
-        pattern=pattern,
-        replacement=email
-    )
-    print("Email updated in index.html")
-    trigger_github_workflow(token=token, repo="jayesh-bansal/Website_TDSP2",
-                            workflow_file="daily_commit.yml")  # Trigger the workflow after
-    time.sleep(15)
+    # pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
+    # match = re.search(pattern, question)
+    # if match:
+    #     email = match.group(1)+"@ds.study.iitm.ac.in"
+    #     print("Email ID", email)
+    # else:
+    #     print("No email found")
+    # pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
+    # github_replace_text(
+    #     token=token,
+    #     repo="jayesh-bansal/Website_TDSP2",
+    #     file_path="index.html",
+    #     pattern=pattern,
+    #     replacement=email
+    # )
+    # print("Email updated in index.html")
+    # trigger_github_workflow(token=token, repo="jayesh-bansal/Website_TDSP2",
+    #                         workflow_file="daily_commit.yml")  # Trigger the workflow after
+    # time.sleep(15)
     return "https://github.com/jayesh-bansal/Website_TDSP2"
 
 
