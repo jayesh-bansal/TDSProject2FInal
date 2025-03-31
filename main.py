@@ -155,12 +155,13 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         else:
             answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.16']:
-        # print(os.getenv('VERCEL'))
-        if file:
-            print(file)
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
-        else:
-            answer = await read_answer(task_id=task_id, question=question)
+        answer = await read_answer(task_id=task_id, question=question)
+        # # print(os.getenv('VERCEL'))
+        # if file:
+        #     print(file)
+        #     answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        # else:
+        #     answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.8', 'GA1.10', 'GA1.12', 'GA1.14', 'GA1.15', 'GA1.17']:
         if file:
             print(file)
@@ -195,10 +196,12 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA2.6']:
         print(file)
-        # file_content = await file.read()
-        flag = await GA2_6_file(file)
-        if flag == "True":
-            answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
+        if file:
+            flag = await GA2_6_file(file)
+            if flag == "True":
+                answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
+            else:
+                answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
         else:
             answer = "https://api-git-main-telvinvargheses-projects.vercel.app/api"
     elif task_id in ['GA2.7']:
@@ -208,10 +211,12 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         answer = "https://hub.docker.com/repository/docker/telvinvarghese/py-hello/general"
     elif task_id in ['GA2.9']:
         print(file)
-        # file_content = await file.read() 
-        flag = await GA2_9_file(file)
-        if flag == "True":
-            answer = "https://tds-ga2-9.vercel.app/api"
+        if file:
+            flag = await GA2_9_file(file)
+            if flag == "True":
+                answer = "https://tds-ga2-9.vercel.app/api"
+            else:
+                answer = "https://tds-ga2-9.vercel.app/api"
         else:
             answer = "https://tds-ga2-9.vercel.app/api"
     elif task_id in ['GA2.10']:

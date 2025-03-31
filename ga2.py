@@ -114,7 +114,8 @@ def count_light_pixels(image_path: str, threshold: float = 0.814):
 
 async def GA2_5(question: str, image_path: str):
     if image_path=="":
-        image_path = download_image("https://exam.sanand.workers.dev/lenna.webp")
+        # image_path = download_image("https://exam.sanand.workers.dev/lenna.webp")
+        image_path = os.path.join(os.path.dirname(__file__), "lenna.webp")
     threshold = re.search(
         r'Number of pixels with lightness > (\d+\.\d+)', question)[1]
     print(image_path, threshold)

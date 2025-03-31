@@ -42,14 +42,14 @@ async def execute_query(q: str):
         pattern_debug_info = {}
 
         # Ticket status pattern
-        if re.search(r"ticket.*?\d+", query):
-            ticket_id = int(re.search(r"ticket.*?(\d+)", query).group(1))
+        if re.search(r"ticket", query):
+            ticket_id = int(re.search(r"(\d+)", query).group(1))
             return {"name": "get_ticket_status", "arguments": json.dumps({"ticket_id": ticket_id})}
         pattern_debug_info["ticket_status"] = re.search(
-            r"ticket.*?\d+", query) is not None
+            r"ticket", query) is not None
 
         # Meeting scheduling pattern
-        if re.search(r"schedule.?\d{4}-\d{2}-\d{2}.?\d{2}:\d{2}.*?room", query, re.IGNORECASE):
+        if re.search(r"meeting", query, re.IGNORECASE):
             date_match = re.search(r"(\d{4}-\d{2}-\d{2})", query)
             time_match = re.search(r"(\d{2}:\d{2})", query)
             room_match = re.search(
@@ -61,11 +61,11 @@ async def execute_query(q: str):
                     "meeting_room": f"Room {room_match.group(1).capitalize()}"
                 })}
         pattern_debug_info["meeting_scheduling"] = re.search(
-            r"schedule.?\d{4}-\d{2}-\d{2}.?\d{2}:\d{2}.*?room", query, re.IGNORECASE) is not None
+            r"meeting", query, re.IGNORECASE) is not None
 
         # Expense balance pattern
         if re.search(r"expense", query):
-            emp_match = re.search(r"employee\s*(\d+)", query, re.IGNORECASE)
+            emp_match = re.search(r"(\d+)", query, re.IGNORECASE)
             if emp_match:
                 return {"name": "get_expense_balance", "arguments": json.dumps({
                     "employee_id": int(emp_match.group(1))
@@ -77,7 +77,7 @@ async def execute_query(q: str):
         if re.search(r"bonus", query, re.IGNORECASE):
             emp_match = re.search(
                 r"emp(?:loyee)?\s*(\d+)", query, re.IGNORECASE)
-            year_match = re.search(r"\b(2024|2025)\b", query)
+            year_match = re.search(r"\b(\d+){4}\b", query)
             if emp_match and year_match:
                 return {"name": "calculate_performance_bonus", "arguments": json.dumps({
                     "employee_id": int(emp_match.group(1)),
@@ -87,7 +87,7 @@ async def execute_query(q: str):
             r"bonus", query, re.IGNORECASE) is not None
 
         # Office issue pattern
-        if re.search(r"(office issue|report issue)", query, re.IGNORECASE):
+        if re.search(r"issue", query, re.IGNORECASE):
             code_match = re.search(
                 r"(issue|number|code)\s*(\d+)", query, re.IGNORECASE)
             dept_match = re.search(
@@ -98,7 +98,7 @@ async def execute_query(q: str):
                     "department": dept_match.group(2).capitalize()
                 })}
         pattern_debug_info["office_issue"] = re.search(
-            r"(office issue|report issue)", query, re.IGNORECASE) is not None
+            r"issue", query, re.IGNORECASE) is not None
 
         raise HTTPException(
             status_code=400, detail=f"Could not parse query: {q}")

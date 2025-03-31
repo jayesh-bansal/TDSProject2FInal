@@ -10,12 +10,17 @@ def get_transcript(question):
     df = pd.read_excel(file_path)
     match = re.search(
         r'between (\d+(?:\.\d+)?) and (\d+(?:\.\d+)?) seconds?', question, re.IGNORECASE)
-    start_time = float(match.group(1))
-    end_time = float(match.group(2))
+    if not match:
+        raise ValueError("Could not extract time range from the question.")
+    try:
+        start_time = int(float(match.group(1)))
+        end_time = int(float(match.group(2)))
+    except (ValueError, TypeError):
+        raise ValueError("Invalid time format extracted from the question.")
 
     transcript = ""
     for index, row in df.iterrows():
-        if row['timestamp'] >= start_time-1 and row['timestamp'] <= end_time+1:
+        if row['timestamp'] >= start_time and row['timestamp'] <= end_time:
             transcript += str(row['text'])+" "
     # print(transcript)
     return transcript

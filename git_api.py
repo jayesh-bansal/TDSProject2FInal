@@ -3,7 +3,7 @@ import base64
 import json
 import re
 import time
-from fastapi import FastAPI, Form, File, UploadFile # type: ignore
+from fastapi import FastAPI, Form, File, UploadFile  # type: ignore
 import asyncio
 from fastapi.responses import HTMLResponse
 token = "github?_pat?_11AUF774Y0tEYjPK91yFns_s2JYf1zM5bpXhHbT0RkuBiPASWT8RcAxxD656fScuN4N5GWOKVZdR9b8Hn3?"
@@ -70,7 +70,7 @@ def get_github_file_sha(token, repo, file_path, branch="main"):
         return None
 
 
-def github_write_file(token, repo, file_path, new_content,branch="main"):
+def github_write_file(token, repo, file_path, new_content, branch="main"):
     """
     Writes (creates or updates) a file in GitHub.
 
@@ -92,10 +92,10 @@ def github_write_file(token, repo, file_path, new_content,branch="main"):
     sha = get_github_file_sha(token, repo, file_path, branch)
     if isinstance(new_content, str):
         encoded_content = base64.b64encode(
-        new_content.encode()).decode()  # If it's a string, encode it
+            new_content.encode()).decode()  # If it's a string, encode it
     else:
         encoded_content = base64.b64encode(
-        new_content).decode()  # If it's bytes, use directly
+            new_content).decode()  # If it's bytes, use directly
 
     data = {
         "message": f"Updating {file_path}",
@@ -216,6 +216,7 @@ def GA1_13(question):
     print("Email updated in email.json")
     return "https://raw.githubusercontent.com/Telvinvarghese/Test/main/email.json"
 
+
 def GA2_3(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
     match = re.search(pattern, question)
@@ -236,7 +237,8 @@ def GA2_3(question):
     trigger_github_workflow(token=token, repo="Telvinvarghese/website",
                             workflow_file="daily_commit.yml")  # Trigger the workflow after
     time.sleep(15)
-    return "https://telvinvarghese.github.io/website/?v=2"
+    return "https://telvinvarghese.github.io/website/?v=5"
+
 
 async def GA2_6_file(file: UploadFile = File(...)):
     """
@@ -254,6 +256,7 @@ async def GA2_6_file(file: UploadFile = File(...)):
     time.sleep(10)
     return True
 
+
 async def GA2_9_file(file: UploadFile = File(...)):
     """
     Upload a file via FastAPI and write it to GitHub.
@@ -269,7 +272,8 @@ async def GA2_9_file(file: UploadFile = File(...)):
     print({"message": "File uploaded successfully!", "github_response": response})
     time.sleep(10)
     return True
-  
+
+
 def GA2_7(question):
     pattern = r"\b([\w.+-]+)@ds\.study\.iitm\.ac\.in\b"
     match = re.search(pattern, question)
@@ -291,6 +295,7 @@ def GA2_7(question):
         token=token, repo="Telvinvarghese/Test", workflow_file="Daily_Commit.yml")
     time.sleep(15)
     return "https://github.com/Telvinvarghese/Test"
+
 
 def GA4_8(question):
     return GA2_7(question)
