@@ -618,7 +618,7 @@ async def GA1_16_Vercel( file: UploadFile):
         return sha256_hash
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 # Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
 # How many lines are different between a.txt and b.txt?
 
