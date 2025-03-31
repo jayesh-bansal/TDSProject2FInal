@@ -197,7 +197,7 @@ async def GA5_3(question: str, file: UploadFile):
     target_weekday = target_weekday.capitalize() + "day"
 
     status_min = 200
-    status_max = 300
+    status_max = 299
 
     print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Section: {target_section}, Day: {target_weekday}")
 
