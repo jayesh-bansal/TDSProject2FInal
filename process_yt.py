@@ -4,11 +4,12 @@ import re
 import httpx
 import os
 
+
 def get_transcript(question):
     file_path = os.path.join(os.path.dirname(__file__), "transcript.xlsx")
     df = pd.read_excel(file_path)
     match = re.search(
-        r'between (\d+\.\d+) and (\d+\.\d+) seconds?', question, re.IGNORECASE)
+        r'between (\d+(?:\.\d+)?) and (\d+(?:\.\d+)?) seconds?', question, re.IGNORECASE)
     start_time = float(match.group(1))
     end_time = float(match.group(2))
 
@@ -19,7 +20,9 @@ def get_transcript(question):
     # print(transcript)
     return transcript
 
+
 API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6IjIyZjIwMDE2NDArMUBkcy5zdHVkeS5paXRtLmFjLmluIn0.Oeg6lAaRenn3gnBWd6qaGscvatJ6ftTpvw-waESMVs8"
+
 
 def correct_transcript(transcript):
     BASE_URL = "https://aiproxy.sanand.workers.dev/openai/v1"
@@ -32,7 +35,7 @@ def correct_transcript(transcript):
         "Authorization": f"Bearer {API_KEY}"
     }
     response = httpx.post(BASE_URL + "/chat/completions",
-                          json=data, headers=headers, timeout=120)
+                          json=data, headers=headers, timeout=60)
 
     return response.json().get("choices", [])[0].get("message", {}).get("content")
 

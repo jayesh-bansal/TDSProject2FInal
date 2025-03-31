@@ -446,7 +446,11 @@ ORDER BY post_id ASC
 
 
 async def GA5_9(question):
-    transcript = correct_transcript(get_transcript(question))
+    transcript = get_transcript(question)
+    try:
+        transcript = correct_transcript(transcript)
+    except Exception as e:
+        transcript=transcript
     print(transcript)
     return transcript
 
