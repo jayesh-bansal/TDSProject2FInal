@@ -301,7 +301,7 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     print("response :", response)
     print()
     try:
-        print("json output :", json.loads(answer))
+        print("final json output after json.loads:", json.loads(answer))
     except json.JSONDecodeError:
         pass
     return response
