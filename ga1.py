@@ -475,7 +475,6 @@ async def GA1_15(question: str, zip_file: UploadFile):
 # Download and extract it. Use mv to move all files under folders into an empty folder. Then rename all files replacing each digit with the next. 1 becomes 2, 9 becomes 0, a1b9c.txt becomes a2b0c.txt.
 # What does running grep . * | LC_ALL=C sort | sha256sum in bash on that folder show?
 
-
 async def GA1_16_LINX(zip_file: UploadFile):
     extract_folder = "extracted"
     merged_folder = "merged_folder"
@@ -526,68 +525,73 @@ async def GA1_16(zip_file: UploadFile):
         return await GA1_16_Vercel("/tmp", zip_file)
 
 
+
+def ensure_directory_exists(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path, exist_ok=True)
+
+
 async def GA1_16_Vercel(BASE_DIR, zip_file: UploadFile):
-    # Use "/tmp/" for Vercel, or local paths when running locally
-    extract_folder = os.path.join(BASE_DIR, "extracted")
-    merged_folder = os.path.join(BASE_DIR, "merged_folder")
-
-    # Ensure clean directories
-    shutil.rmtree(extract_folder, ignore_errors=True)
-    shutil.rmtree(merged_folder, ignore_errors=True)
-    os.makedirs(extract_folder, exist_ok=True)
-    os.makedirs(merged_folder, exist_ok=True)
-
-    # Save uploaded file temporarily
-    with NamedTemporaryFile(delete=False, dir=BASE_DIR) as temp_zip:
-        temp_zip_path = temp_zip.name
-
-    async with aiofiles.open(temp_zip_path, 'wb') as temp_zip_writer:
-        while chunk := await zip_file.read(1024):  # Read in chunks
-            await temp_zip_writer.write(chunk)
-
-    # Extract ZIP file
-    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-        zip_ref.extractall(extract_folder)
-
-    # Move all files from subdirectories into merged_folder
-    for root, _, files in os.walk(extract_folder):
-        for file in files:
-            src_path = os.path.join(root, file)
-            dest_path = os.path.join(merged_folder, file)
-            shutil.move(src_path, dest_path)
-
-    # Rename files (Shift digits: 1 → 2, 9 → 0)
-    for file in os.listdir(merged_folder):
-        newname = file.translate(str.maketrans("0123456789", "1234567890"))
-        if file != newname:
-            shutil.move(os.path.join(merged_folder, file),
-                        os.path.join(merged_folder, newname))
-
-    # Change to merged folder for hashing
-    os.chdir(merged_folder)
-
-    # Mimic `grep . * | LC_ALL=C sort | sha256sum`
-    sorted_lines = []
-    for file in sorted(os.listdir(), key=lambda f: f.encode("utf-8")):  # Byte-wise sorting
-        async with aiofiles.open(file, 'r', encoding='utf-8', errors='ignore') as f:
-            lines = await f.readlines()
-            for line in lines:
-                if line.strip():  # Ignore empty lines like `grep . *`
-                    sorted_lines.append(f"{file}:{line.strip()}")
-
-    sorted_lines.sort(key=lambda x: x.encode("utf-8"))  # Mimic `LC_ALL=C sort`
-
-    # Compute SHA-256 checksum on sorted content
-    hash_obj = hashlib.sha256()
-    for line in sorted_lines:
-        hash_obj.update(line.encode("utf-8"))
-
-    checksum_result = hash_obj.hexdigest()
-
-    # Cleanup temp files
-    os.remove(temp_zip_path)
-
-    return checksum_result
+    try:
+        work_folder = '/tmp/digit_replace_folder'
+        ensure_directory_exists(work_folder)
+        
+        # Validate file input
+        if not file.filename.endswith(".zip"):
+            raise HTTPException(status_code=400, detail="Uploaded file is not a ZIP file.")
+        
+        # Save uploaded ZIP file
+        zip_path = os.path.join('/tmp', file.filename)
+        with open(zip_path, "wb") as buffer:
+            buffer.write(file.file.read())
+        
+        # Extract files to work folder
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            zf.extractall(work_folder)
+        
+        # Move files to root of work_folder
+        for root, dirs, files in os.walk(work_folder, topdown=False):
+            for file in files:
+                src_path = os.path.join(root, file)
+                dst_path = os.path.join(work_folder, file)
+                counter = 1
+                while os.path.exists(dst_path):
+                    dst_path = os.path.join(work_folder, f"{counter}_{file}")
+                    counter += 1
+                shutil.move(src_path, dst_path)
+            for d in dirs:
+                try:
+                    os.rmdir(os.path.join(root, d))
+                except OSError:
+                    pass
+        
+        # Perform digit replacement
+        for file in os.listdir(work_folder):
+            old_path = os.path.join(work_folder, file)
+            if os.path.isfile(old_path):
+                new_name = re.sub(r'\d', lambda m: str((int(m.group(0)) + 1) % 10), file)
+                new_path = os.path.join(work_folder, new_name)
+                os.rename(old_path, new_path)
+        
+        # Perform grep and hash
+        grep_lines = []
+        for file in sorted(os.listdir(work_folder), key=lambda x: x.encode('utf-8')):
+            file_path = os.path.join(work_folder, file)
+            if os.path.isfile(file_path):
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        stripped_line = line.rstrip('\n')
+                        if stripped_line:
+                            grep_lines.append(f"{file}:{stripped_line}")
+        
+        grep_lines.sort(key=lambda x: x.encode('utf-8'))
+        concatenated_output = "\n".join(grep_lines) + "\n"
+        sha256_hash = hashlib.sha256(concatenated_output.encode('utf-8')).hexdigest()
+        
+        return sha256_hash
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Download and extract it. It has 2 nearly identical files, a.txt and b.txt, with the same number of lines.
 # How many lines are different between a.txt and b.txt?
