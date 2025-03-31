@@ -191,7 +191,10 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     elif task_id in ['GA2.5']:
         if file:
             print(file)
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+            if file.filename.endswith('.webp'):
+                answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+            else:
+                answer = await fetch_answer(task_id=task_id, question=question, file_path="")
         else:
             answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA2.6']:
