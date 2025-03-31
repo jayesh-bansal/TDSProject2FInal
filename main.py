@@ -137,7 +137,10 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
     task_id = classify_task(question)
     if task_id == "Unknown":
         print(question)
-        answer = Solve_Unknown_Task(question)
+        try:
+            answer = Solve_Unknown_Task(question)
+        except Exception as e:
+            answer = "Unknown"
     elif task_id in ['GA1.1']:
         answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA1.2', 'GA1.4', 'GA1.5', 'GA1.7', 'GA1.9', 'GA1.18']:
@@ -249,11 +252,12 @@ async def receive_question(question: str = Form(...), file: UploadFile = File(No
         else:
             answer = await read_answer(task_id=task_id, question=question)
     elif task_id in ['GA5.3', 'GA5.4']:
-        if file:
-            print(file)
-            answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
-        else:
-            answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+        answer = await fetch_answer(task_id=task_id, question=question, file_path="")
+        # if file:
+        #     print(file)
+        #     answer = await fetch_answer(task_id=task_id, question=question, file_path=file)
+        # else:
+        #     answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.8']:
         answer = await fetch_answer(task_id=task_id, question=question, file_path="")
     elif task_id in ['GA5.9']:

@@ -133,7 +133,7 @@ async def GA5_3_file(question: str, file_content):
     target_weekday = target_weekday.capitalize() + "day"
 
     status_min = 200
-    status_max = 299
+    status_max = 300
 
     print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Section: {target_section}, Day: {target_weekday}")
 
@@ -167,7 +167,7 @@ async def GA5_3_file(question: str, file_content):
                 request_weekday = log_time.strftime('%A')
 
                 # Apply filters
-                if (status_min <= status_code <= status_max and
+                if (status_min <= status_code < status_max and
                     request_method == request_type and
                     url.startswith(target_section) and
                     int(start_hour) <= log_time.hour < int(end_hour) and
@@ -197,7 +197,7 @@ async def GA5_3(question: str, file: UploadFile):
     target_weekday = target_weekday.capitalize() + "day"
 
     status_min = 200
-    status_max = 299
+    status_max = 300
 
     print(f"Parsed Parameters: {start_hour} to {end_hour}, Type: {request_type}, Section: {target_section}, Day: {target_weekday}")
 
@@ -231,7 +231,7 @@ async def GA5_3(question: str, file: UploadFile):
                 request_weekday = log_time.strftime('%A')
 
                 # Apply filters
-                if (status_min <= status_code <= status_max and
+                if (status_min <= status_code < status_max and
                     request_method == request_type and
                     url.startswith(target_section) and
                     int(start_hour) <= log_time.hour < int(end_hour) and
@@ -446,12 +446,8 @@ ORDER BY post_id ASC
 
 
 async def GA5_9(question):
-    transcript = get_transcript(question)
-    try:
-        correct_transcript(transcript)
-        print(transcript)
-    except Exception as e:
-        print(transcript)
+    transcript = correct_transcript(get_transcript(question))
+    print(transcript)
     return transcript
 
 

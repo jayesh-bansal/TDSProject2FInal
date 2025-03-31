@@ -136,8 +136,12 @@ def GA1_4(question):
         rows, cols, start, step, begin, end = map(int, match.groups())
         if begin > 0:
             begin = begin-1
+        if step == 0:
+            answer = start*10
+        else:
+            arr = np.arange(start, start + (cols * step), step)
         answer = int(
-            np.sum(np.arange(start, start + cols * step, step)[begin:end]))
+            np.sum(arr[begin:end]))
         return answer
 
 # Let's make sure you can write formulas in Excel. Type this formula into Excel.
@@ -481,6 +485,7 @@ async def GA1_16_LINX(zip_file: UploadFile):
     # Return checksum result
     return result.stdout.strip()
 
+
 async def GA1_16(zip_file: UploadFile):
     # Use "/tmp/" for Vercel, or local paths when running locally
     print(os.getenv("VERCEL"))
@@ -490,7 +495,7 @@ async def GA1_16(zip_file: UploadFile):
         return await GA1_16_Vercel("/tmp", zip_file)
 
 
-async def GA1_16_Vercel(BASE_DIR,zip_file: UploadFile):
+async def GA1_16_Vercel(BASE_DIR, zip_file: UploadFile):
     # Use "/tmp/" for Vercel, or local paths when running locally
     extract_folder = os.path.join(BASE_DIR, "extracted")
     merged_folder = os.path.join(BASE_DIR, "merged_folder")
